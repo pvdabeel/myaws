@@ -18,7 +18,6 @@
 # Copy this file to your bitbar plugins folder and chmod +x the file from your terminal in that folder
 # Run bitbar
 
-
 aws_owner_id = '615416975922'
 aws_key_name = 'gentoo'
 aws_security = 'sg-bce547d1'
@@ -51,7 +50,7 @@ import time
 import os
 import subprocess
 import requests
-
+import time
 from datetime import date
 
 
@@ -179,17 +178,18 @@ def main(argv):
                  print ('%s--Connect | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
               if state == 'stopped':
                  print ('%s--Start | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 start-instances --instance-ids "+current_instance_id, color))
+                 print ('%s--Create image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 create-image --instance-id "+current_instance_id+" --name Linux-"+time.strftime("%Y%m%d-%Hh%M"), color))
               if state == 'running':
                  print ('%s--Stop | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 stop-instances --instance-ids "+current_instance_id+" --force", color))
               if (state == 'running') or (state == 'stopped'):
                  print ('%s--Terminate | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 terminate-instances --instance-ids "+current_instance_id, color))
        
-       if len(instances) > 0: 
+       if len(image_instance_list) > 0: 
           print ('%s---' % prefix)
           print ('%sTerminate all Virtual Machines | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 terminate-instances --dry-run --instance-ids "+" ".join(image_instance_list), color))
        print ('%s---' % prefix)
        print ('%sDestroy image | color=%s' % (prefix, color))
-
+       prefix = ''
 
 def run_script(script):
     return subprocess.Popen([script], stdout=subprocess.PIPE, shell=True).communicate()[0].strip()
