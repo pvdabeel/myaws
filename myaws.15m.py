@@ -174,7 +174,7 @@ def main(argv):
               if state == 'running': 
                  print ('%s--Connect | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "ssh", "-o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
               if state == 'stopped':
-                 print ('%s--Start | color=%s' % (prefix, color))
+                 print ('%s--Start | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 start-instances --instance-ids "+current_instance_id, color))
               if state == 'running':
                  print ('%s--Stop | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 stop-instances --instance-ids "+current_instance_id+" --force", color))
               if (state == 'running') or (state == 'stopped'):
