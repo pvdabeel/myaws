@@ -143,16 +143,16 @@ def main(argv):
        # print menu with relevant info and actions
 
        print ('%sDeploy new Virtual Machine | color=%s' % (prefix, color))
-       print ('%s--t2.micro		(  1 vcpu, 1Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id ami-089fc69c2ca496809 --instance-type t2.micro --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--t2.small		(  1 vcpu, 2Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id ami-089fc69c2ca496809 --instance-type t2.small --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--t2.medium	(  2 vcpu, 4Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id ami-089fc69c2ca496809 --instance-type t2.medium --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--t2.large		(  4 vcpu, 16Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id ami-089fc69c2ca496809 --instance-type t2.large --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--t2.2xlarge 	(  8 vcpu, 32Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id ami-089fc69c2ca496809 --instance-type t2.2xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t2.micro		(  1 vcpu, 1Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.micro --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t2.small		(  1 vcpu, 2Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.small --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t2.medium	(  2 vcpu, 4Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.medium --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t2.large		(  4 vcpu, 16Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.large --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t2.2xlarge 	(  8 vcpu, 32Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.2xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
        print ('%s-----' % prefix)
-       print ('%s--m4.4xlarge	( 16 vcpu, 64Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id ami-089fc69c2ca496809 --instance-type m4.4xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--m4.16xlarge	( 64 vcpu, 256Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id ami-089fc69c2ca496809 --instance-type m4.16xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--m4.4xlarge	( 16 vcpu, 64Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type m4.4xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--m4.16xlarge	( 64 vcpu, 256Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type m4.16xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
        print ('%s-----' % prefix)
-       print ('%s--x1.32xlarge	( 128 vcpu, 1952Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id ami-089fc69c2ca496809 --instance-type x1.32xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--x1.32xlarge	( 128 vcpu, 1952Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type x1.32xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
 
        print ('%s---' % prefix)
 
