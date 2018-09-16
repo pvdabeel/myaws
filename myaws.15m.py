@@ -158,6 +158,9 @@ def main(argv):
        print ('%s---' % prefix)
 
        # loop through instances, 
+
+       image_instance_list = []
+
        for instance in instances:
 
            instance_json=instance[0]
@@ -165,6 +168,7 @@ def main(argv):
            current_instance_id = instance_json['InstanceId']
 
            if instance_json['ImageId'] == current_image_id: 
+              image_instance_list.append(current_instance_id)
               state = instance_json['State']['Name'] 
               dnsname = instance_json['PublicDnsName']
               vmtype = instance_json['InstanceType']
@@ -182,7 +186,9 @@ def main(argv):
        
        if len(instances) > 0: 
           print ('%s---' % prefix)
-          print ('%sTerminate all Virtual Machines | color=%s' % (prefix, color))
+          print ('%sTerminate all Virtual Machines | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 terminate-instances --dry-run --instance-ids "+" ".join(image_instance_list), color))
+       print ('%s---' % prefix)
+       print ('%sDestroy image | color=%s' % (prefix, color))
 
 
 def run_script(script):
