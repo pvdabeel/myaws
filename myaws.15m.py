@@ -172,7 +172,7 @@ def main(argv):
 
               print ('%s%s		%s		ip: %s ' % (prefix, color_state(state), justify(vmtype), ipaddress))
               if state == 'running': 
-                 print ('%s--Connect | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "ssh", "-o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
+                 print ('%s--Connect | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
               if state == 'stopped':
                  print ('%s--Start | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 start-instances --instance-ids "+current_instance_id, color))
               if state == 'running':
