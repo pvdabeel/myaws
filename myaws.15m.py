@@ -119,7 +119,7 @@ def main(argv):
         info_color = '#808080'
 
     try: 
-        images = json.loads(subprocess.check_output("/usr/local/bin/aws ec2 describe-images --owners "+aws_owner_id+" --query 'Images[*].{ImageId:ImageId,Name:Name}'", shell=True))
+        images = json.loads(subprocess.check_output("/usr/local/bin/aws ec2 describe-images --owners "+aws_owner_id+" --query 'Images[*].{ImageId:ImageId,Name:Name,SnapshotId:BlockDeviceMappings[0].Ebs.SnapshotId}'", shell=True))
         instances = json.loads(subprocess.check_output("/usr/local/bin/aws ec2 describe-instances --query 'Reservations[*].Instances[*].{PublicDnsName:PublicDnsName,State:State,InstanceType:InstanceType,PublicIpAddress:PublicIpAddress,InstanceId:InstanceId,ImageId:ImageId}'", shell=True))
     except: 
        app_print_logo()
@@ -135,6 +135,7 @@ def main(argv):
     for image in images: 
 
        current_image_id = image['ImageId']
+       current_image_snapshot_id = image['SnapshotId']
  
        # Create a submenu for every AMI
        print ('%sImage: %s | color=%s' % (prefix, image['Name'], color))
@@ -188,7 +189,7 @@ def main(argv):
           print ('%s---' % prefix)
           print ('%sTerminate all Virtual Machines | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 terminate-instances --instance-ids "+" ".join(image_instance_list), color))
        print ('%s---' % prefix)
-       print ('%sDestroy image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 deregister-image --image-id "+current_image_id, color))
+       print ('%sDestroy image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 deregister-image --image-id "+current_image_id + " && /usr/local/bin/aws delete-shapshot --snap-id "+current_image_snapshot_id, color))
        prefix = ''
 
 def run_script(script):
