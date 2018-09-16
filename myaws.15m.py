@@ -143,7 +143,7 @@ def main(argv):
        
        # print menu with relevant info and actions
 
-       print ('%sDeploy new VM | color=%s' % (prefix, color))
+       print ('%sDeploy new Virtual Machine | color=%s' % (prefix, color))
        print ('%s--t2.micro		(  1 vcpu, 1Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id ami-089fc69c2ca496809 --instance-type t2.micro --key-name gentoo --security-group-ids sg-bce547d1", color))
        print ('%s--t2.small		(  1 vcpu, 2Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id ami-089fc69c2ca496809 --instance-type t2.small --key-name gentoo --security-group-ids sg-bce547d1", color))
        print ('%s--t2.medium	(  2 vcpu, 4Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id ami-089fc69c2ca496809 --instance-type t2.medium --key-name gentoo --security-group-ids sg-bce547d1", color))
@@ -182,7 +182,7 @@ def main(argv):
        
        if len(instances) > 0: 
           print ('%s---' % prefix)
-          print ('%sTerminate all VM | color=%s' % (prefix, color))
+          print ('%sTerminate all Virtual Machines | color=%s' % (prefix, color))
 
 
 def run_script(script):
