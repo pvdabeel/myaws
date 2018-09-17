@@ -13,7 +13,6 @@ See console output in Menu Bar
 ![Imgur](https://i.imgur.com/B17Q9hy.jpg)
 
 Create new virtual machines 
-
 ![Imgur](https://i.imgur.com/YRpszUT.png)
 
 
@@ -21,9 +20,8 @@ Create new virtual machines
 
 ## Installation instructions: 
 
-1. Execute in terminal.app before running : sudo easy_install keyring boto
-2. Ensure you have [aws command line tools](https://docs.aws.amazon.com/cli/latest/userguide/cli-install-macos.html) installed
-3. Ensure you have [bitbar](https://github.com/matryer/bitbar/releases/latest) installed.
-4. Ensure your bitbar plugins directory does not have a space in the path (A known bitbar bug)
-5. Copy [myaws.15m.py](myaws.15m.py) to your bitbar plugins folder and chmod +x the file from your terminal in that folder
-6. Run bitbar
+1. Ensure you have [aws command line tools](https://docs.aws.amazon.com/cli/latest/userguide/cli-install-macos.html) installed
+2. Ensure you have [bitbar](https://github.com/matryer/bitbar/releases/latest) installed.
+3. Ensure your bitbar plugins directory does not have a space in the path (A known bitbar bug)
+4. Copy [myaws.15m.py](myaws.15m.py) to your bitbar plugins folder and chmod +x the file from your terminal in that folder
+5. Run bitbar
