@@ -174,7 +174,7 @@ def main(argv):
 
               print ('%s%s		%s		ip: %s ' % (prefix, color_state(state), justify(vmtype), ipaddress))
               if state == 'running': 
-                 print ('%s--Connect | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
+                print ('%s--Connect | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
               if state == 'stopped':
                  print ('%s--Start | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 start-instances --instance-ids "+current_instance_id, color))
                  print ('%s--Create image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 create-image --instance-id "+current_instance_id+" --name Linux-"+time.strftime("%Y%m%d-%Hh%M"), color))
@@ -182,6 +182,11 @@ def main(argv):
                  print ('%s--Stop | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 stop-instances --instance-ids "+current_instance_id+" --force", color))
               if (state == 'running') or (state == 'stopped'):
                  print ('%s--Terminate | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 terminate-instances --instance-ids "+current_instance_id, color))
+              if state == 'running': 
+                 print ('%s-----' % (prefix))
+                 print ('%s--Console | color=%s' % (prefix, color))
+                 console = json.loads(subprocess.check_output("/usr/local/bin/aws ec2 get-console-screenshot --instance-id "+current_instance_id, shell=True))['ImageData']
+                 print ('%s----|image="%s" | color=%s' % (prefix, console, color))
        
        if len(image_instance_list) > 0: 
           print ('%s---' % prefix)

@@ -5,7 +5,17 @@ Displays information regarding your AWS EC2 virtual machines in the Mac OS X men
 Allows you to create, connect to and terminate EC2 virtual machines.
 Create and destroy EC2 images from virtual machines.
 
+
+Start, connect to and terminate virtual machines
 ![Imgur](https://i.imgur.com/1MTAvlX.png)
+
+See console output in Menu Bar
+![Imgur](https://i.imgur.com/B17Q9hy.jpg)
+
+Create new virtual machines 
+
+![Imgur](https://i.imgur.com/YRpszUT.png)
+
 
 ## Licence: GPL v3
 
