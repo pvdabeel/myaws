@@ -54,6 +54,7 @@ import os
 import subprocess
 import requests
 import time
+import decimal
 from datetime import date
 
 
@@ -95,13 +96,18 @@ def color_state(state):
 def color_cost(cost,desc,rate):
     short_rate = '$'
     if desc == 'Tax':
-       return CRED + short_rate + ' ' + justify(str(round(float(cost),2)),5) + '\t ' + CEND + ' - ' + desc
+       return CRED + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + '\t ' + CEND + ' - ' + desc
     elif desc == 'Total': 
-       return CGREEN + short_rate + ' ' + justify(str(round(float(cost),2)),5) + '\t ' + CEND + ' - ' + desc
+       return CGREEN + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + '\t ' + CEND + ' - ' + desc
     elif desc == '': 
-       return CGREEN + short_rate + ' ' + justify(str(round(float(cost),2)),5) + '\t ' + CEND
+       return CGREEN + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + '\t ' + CEND
     else:
-       return CBLUE + short_rate + ' ' + justify(str(round(float(cost),2)),5) + '\t ' + CEND + ' - ' + desc
+       return CBLUE + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + '\t ' + CEND + ' - ' + desc
+
+def cost_format(x):
+    digits = 4
+    temp = str(decimal.Decimal(str(x) + '0' * digits))
+    return temp[:temp.find('.') + digits + 1]
 
 
 def justify(string):
@@ -159,7 +165,7 @@ def main(argv):
        current_image_snapshot_id = image['SnapshotId']
  
        # Create a submenu for every AMI
-       print ('%sImage: %s | color=%s' % (prefix, image['Name'], color))
+       print ('%sImage : %s | color=%s' % (prefix, image['Name'], color))
        prefix = '--'
        
        # print menu with relevant info and actions
@@ -243,15 +249,28 @@ def main(argv):
     totalcost = 0
     for group in monthly_cost['ResultsByTime'][0]['Groups']:
        totalcost += float(group['Metrics']['BlendedCost']['Amount'])
-    print ('Cost this month:	 		%s | color=%s' % (color_cost(totalcost,'','USD'),color))
+    print ('Cost this month:		 %s | color=%s' % (color_cost(totalcost,'','USD'),color))
     for group in monthly_cost['ResultsByTime'][0]['Groups']:
        if group['Keys'][0] == 'Tax':
           print('-----')
        print '--%s | color=%s' % (color_cost(group['Metrics']['BlendedCost']['Amount'],group['Keys'][0],group['Metrics']['BlendedCost']['Unit']),color)
     print ('-----')
     print ('--%s | color=%s' % (color_cost(totalcost,'Total','USD'),color))
-    print todayDate.strftime("%Y-%m-%d")
-
+    totalcost = 0
+    dailycost = 0
+    for day in daily_cost['ResultsByTime']:
+       for group in day['Groups']:
+          dailycost = float(group['Metrics']['BlendedCost']['Amount'])
+       print ('----%s : %s | color=%s' % (day['TimePeriod']['Start'],color_cost(dailycost,'','USD'),color))
+       for group in day['Groups']:
+          if group['Keys'][0] == 'Tax':
+             print('---------')
+          print '------%s | color=%s' % (color_cost(group['Metrics']['BlendedCost']['Amount'],group['Keys'][0],group['Metrics']['BlendedCost']['Unit']),color)
+       print ('---------')
+       print ('------%s | color=%s' % (color_cost(dailycost,'Total','USD'),color))
+       dailycost = 0
+       #print ('--%s : %s | color=s%' % (str(group['TimePeriod']['Start']),str(group['Groups']),color))
+ 
 
 def run_script(script):
     return subprocess.Popen([script], stdout=subprocess.PIPE, shell=True).communicate()[0].strip()
