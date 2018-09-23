@@ -28,6 +28,8 @@ aws_security = 'sg-bce547d1'
 # aws ec2 terminate-instances --instance-ids i-0de69865f64ebd6ad
 # aws ec2 stop-instances --instance-ids --force
 
+# aws ce get-cost-and-usage --time-period Start=2018-09-01,End=2018-09-23 --granularity MONTHLY --metrics BlendedCost UnblendedCost UsageQuantity --group-by Type=DIMENSION,Key=SERVICE
+
 
 try:   # Python 3 dependencies
     from urllib.parse import urlencode
@@ -89,8 +91,23 @@ def color_state(state):
     else:
         return state
 
+def color_cost(cost,desc,rate):
+    short_rate = '$'
+    if desc == 'Tax':
+       return CRED + short_rate + ' ' + justify(str(round(float(cost),2)),5) + '\t ' + CEND + ' - ' + desc
+    elif desc == 'Total': 
+       return CGREEN + short_rate + ' ' + justify(str(round(float(cost),2)),5) + '\t ' + CEND + ' - ' + desc
+    elif desc == '': 
+       return CGREEN + short_rate + ' ' + justify(str(round(float(cost),2)),5) + '\t ' + CEND
+    else:
+       return CBLUE + short_rate + ' ' + justify(str(round(float(cost),2)),5) + '\t ' + CEND + ' - ' + desc
+
+
 def justify(string):
     return string.ljust(10)
+
+def justify(string,number):
+    return string.ljust(number)
 
 
 # The init function: Called to store your AWS access keys
@@ -117,8 +134,12 @@ def main(argv):
         info_color = '#808080'
 
     try: 
+        todayDate = datetime.date.today()
+        monthDate = todayDate.replace(day=1)
+
         images = json.loads(subprocess.check_output("/usr/local/bin/aws ec2 describe-images --owners "+aws_owner_id+" --query 'Images[*].{ImageId:ImageId,Name:Name,SnapshotId:BlockDeviceMappings[0].Ebs.SnapshotId}'", shell=True))
         instances = json.loads(subprocess.check_output("/usr/local/bin/aws ec2 describe-instances --query 'Reservations[*].Instances[*].{PublicDnsName:PublicDnsName,State:State,InstanceType:InstanceType,PublicIpAddress:PublicIpAddress,InstanceId:InstanceId,ImageId:ImageId}'", shell=True))
+        costs = json.loads(subprocess.check_output("/usr/local/bin/aws ce get-cost-and-usage --time-period Start="+monthDate.strftime("%Y-%m-%d")+",End="+todayDate.strftime("%Y-%m-%d")+" --granularity MONTHLY --metrics BlendedCost --group-by Type=DIMENSION,Key=SERVICE", shell=True))
     except: 
        app_print_logo()
        print ('Failed to get AMI from EC2 | refresh=true terminal=true bash="\'%s\'" param1="%s" color=%s' % (sys.argv[0], 'init', color))
@@ -213,6 +234,22 @@ def main(argv):
        else:
           print ('%sDestroy image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 deregister-image --image-id "+current_image_id + " --dry-run && /usr/local/bin/aws ec2 delete-snapshot --dry-run --snapshot-id "+current_image_snapshot_id, color))
        prefix = ''
+
+    # cost and usage menu
+
+    print ('---')
+    totalcost = 0
+    for group in costs['ResultsByTime'][0]['Groups']:
+       totalcost += float(group['Metrics']['BlendedCost']['Amount'])
+    print ('Cost this month:	 		%s | color=%s' % (color_cost(totalcost,'','USD'),color))
+    for group in costs['ResultsByTime'][0]['Groups']:
+       if group['Keys'][0] == 'Tax':
+          print('-----')
+       print '--%s | color=%s' % (color_cost(group['Metrics']['BlendedCost']['Amount'],group['Keys'][0],group['Metrics']['BlendedCost']['Unit']),color)
+    print ('-----')
+    print ('--%s | color=%s' % (color_cost(totalcost,'Total','USD'),color))
+    print todayDate.strftime("%Y-%m-%d")
+
 
 def run_script(script):
     return subprocess.Popen([script], stdout=subprocess.PIPE, shell=True).communicate()[0].strip()
