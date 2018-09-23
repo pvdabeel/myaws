@@ -100,15 +100,15 @@ def app_print_logo():
 # Pretty printing
 def color_state(state):
     if state == 'running':
-        return CGREEN + justify(state) + CEND
+        return CGREEN + justify(state,10) + CEND
     if state == 'stopped':
-        return CRED + justify(state) + CEND
+        return CRED + justify(state,10) + CEND
     if state == 'pending':
-        return CGREEN + justify('starting') + CEND
+        return CGREEN + justify('starting',10) + CEND
     if state == 'terminated':
-        return justify('deleted')
+        return justify('deleted',10)
     if state == 'shutting-down':
-        return CRED + justify('stopping') + CEND
+        return CRED + justify('stopping',10) + CEND
     else:
         return state
 
@@ -235,7 +235,7 @@ def main(argv):
               vmtype = instance_json['InstanceType']
               ipaddress = instance_json['PublicIpAddress']
 
-              print ('%s%s		%s		ip: %s ' % (prefix, color_state(state), justify(vmtype), ipaddress))
+              print ('%s%s		%s		ip: %s ' % (prefix, color_state(state), justify(vmtype,10), ipaddress))
               if state == 'running': 
                 print ('%s--Connect | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
               if state == 'stopped':
