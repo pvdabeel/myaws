@@ -21,6 +21,7 @@
 aws_owner_id = '615416975922'
 aws_key_name = 'gentoo'
 aws_security = 'sg-bce547d1'
+aws_command  = '/usr/local/bin/aws'
 
 # aws ec2 describe-images --owners 615416975922 --query 'Images[*].{ID:ImageId}'
 # aws ec2 run-instances --image-id ami-089fc69c2ca496809 --count 1 --instance-type t2.micro --key-name gentoo --security-group-ids sg-bce547d1
@@ -137,9 +138,10 @@ def main(argv):
         todayDate = datetime.date.today()
         monthDate = todayDate.replace(day=1)
 
-        images = json.loads(subprocess.check_output("/usr/local/bin/aws ec2 describe-images --owners "+aws_owner_id+" --query 'Images[*].{ImageId:ImageId,Name:Name,SnapshotId:BlockDeviceMappings[0].Ebs.SnapshotId}'", shell=True))
-        instances = json.loads(subprocess.check_output("/usr/local/bin/aws ec2 describe-instances --query 'Reservations[*].Instances[*].{PublicDnsName:PublicDnsName,State:State,InstanceType:InstanceType,PublicIpAddress:PublicIpAddress,InstanceId:InstanceId,ImageId:ImageId}'", shell=True))
-        costs = json.loads(subprocess.check_output("/usr/local/bin/aws ce get-cost-and-usage --time-period Start="+monthDate.strftime("%Y-%m-%d")+",End="+todayDate.strftime("%Y-%m-%d")+" --granularity MONTHLY --metrics BlendedCost --group-by Type=DIMENSION,Key=SERVICE", shell=True))
+        images = json.loads(subprocess.check_output(aws_command + " ec2 describe-images --owners "+aws_owner_id+" --query 'Images[*].{ImageId:ImageId,Name:Name,SnapshotId:BlockDeviceMappings[0].Ebs.SnapshotId}'", shell=True))
+        instances = json.loads(subprocess.check_output(aws_command + " ec2 describe-instances --query 'Reservations[*].Instances[*].{PublicDnsName:PublicDnsName,State:State,InstanceType:InstanceType,PublicIpAddress:PublicIpAddress,InstanceId:InstanceId,ImageId:ImageId}'", shell=True))
+        monthly_cost = json.loads(subprocess.check_output(aws_command + " ce get-cost-and-usage --time-period Start="+monthDate.strftime("%Y-%m-%d")+",End="+todayDate.strftime("%Y-%m-%d")+" --granularity MONTHLY --metrics BlendedCost --group-by Type=DIMENSION,Key=SERVICE", shell=True))
+        daily_cost = json.loads(subprocess.check_output(aws_command + " ce get-cost-and-usage --time-period Start="+monthDate.strftime("%Y-%m-%d")+",End="+todayDate.strftime("%Y-%m-%d")+" --granularity DAILY --metrics BlendedCost --group-by Type=DIMENSION,Key=SERVICE", shell=True))
     except: 
        app_print_logo()
        print ('Failed to get AMI from EC2 | refresh=true terminal=true bash="\'%s\'" param1="%s" color=%s' % (sys.argv[0], 'init', color))
@@ -163,32 +165,32 @@ def main(argv):
        # print menu with relevant info and actions
 
        print ('%sDeploy new Virtual Machine | color=%s' % (prefix, color))
-       print ('%s--t2.micro		(  1 vcpu, 1Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.micro --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--t2.small		(  1 vcpu, 2Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.small --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--t2.medium	(  2 vcpu, 4Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.medium --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--t2.large		(  2 vcpu, 8Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.large --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--t2.xlarge	(  4 vcpu, 16Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--t2.2xlarge 	(  8 vcpu, 32Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.2xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t2.micro		(  1 vcpu, 1Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.micro --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t2.small		(  1 vcpu, 2Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.small --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t2.medium	(  2 vcpu, 4Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.medium --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t2.large		(  2 vcpu, 8Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.large --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t2.xlarge	(  4 vcpu, 16Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t2.2xlarge 	(  8 vcpu, 32Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type t2.2xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
        print ('%s-----' % prefix)
-       print ('%s--t3.micro		(  2 vcpu, 1Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t3.micro --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--t3.small		(  2 vcpu, 2Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t3.small --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--t3.medium	(  2 vcpu, 4Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t3.medium --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--t3.large		(  2 vcpu, 8Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t3.large --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--t3.xlarge	(  4 vcpu, 16Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t3.xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--t3.2xlarge 	(  8 vcpu, 32Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type t3.2xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t3.micro		(  2 vcpu, 1Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type t3.micro --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t3.small		(  2 vcpu, 2Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type t3.small --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t3.medium	(  2 vcpu, 4Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type t3.medium --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t3.large		(  2 vcpu, 8Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type t3.large --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t3.xlarge	(  4 vcpu, 16Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type t3.xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--t3.2xlarge 	(  8 vcpu, 32Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type t3.2xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
        print ('%s-----' % prefix)
-       print ('%s--m4.4xlarge	( 16 vcpu, 64Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type m4.4xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--m4.16xlarge	( 64 vcpu, 256Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type m4.16xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--m4.4xlarge	( 16 vcpu, 64Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type m4.4xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--m4.16xlarge	( 64 vcpu, 256Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type m4.16xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
        print ('%s-----' % prefix)
-       print ('%s--m5.4xlarge	( 16 vcpu, 64Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type m5.4xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--m5.12xlarge	( 48 vcpu, 192Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type m5.12xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--m5.24xlarge	( 96 vcpu, 384Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type m5.24xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--m5.4xlarge	( 16 vcpu, 64Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type m5.4xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--m5.12xlarge	( 48 vcpu, 192Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type m5.12xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--m5.24xlarge	( 96 vcpu, 384Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type m5.24xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
        print ('%s-----' % prefix)
-       print ('%s--c5.4xlarge	( 16 vcpu, 32Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type c5.4xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--c5.9xlarge	( 36 vcpu, 72Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type c5.9xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
-       print ('%s--c5.18xlarge	( 72 vcpu, 144Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type c5.18xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--c5.4xlarge	( 16 vcpu, 32Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type c5.4xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--c5.9xlarge	( 36 vcpu, 72Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type c5.9xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--c5.18xlarge	( 72 vcpu, 144Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type c5.18xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
        print ('%s-----' % prefix)
-       print ('%s--x1.32xlarge	( 128 vcpu, 1952Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 run-instances --image-id "+current_image_id+" --instance-type x1.32xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
+       print ('%s--x1.32xlarge	( 128 vcpu, 1952Gb vram ) | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type x1.32xlarge --key-name gentoo --security-group-ids sg-bce547d1", color))
 
        print ('%s---' % prefix)
 
@@ -213,12 +215,12 @@ def main(argv):
               if state == 'running': 
                 print ('%s--Connect | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
               if state == 'stopped':
-                 print ('%s--Start | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 start-instances --instance-ids "+current_instance_id, color))
-                 print ('%s--Create image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 create-image --instance-id "+current_instance_id+" --name Linux-"+time.strftime("%Y%m%d-%Hh%M"), color))
+                 print ('%s--Start | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 start-instances --instance-ids "+current_instance_id, color))
+                 print ('%s--Create image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 create-image --instance-id "+current_instance_id+" --name Linux-"+time.strftime("%Y%m%d-%Hh%M"), color))
               if state == 'running':
-                 print ('%s--Stop | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 stop-instances --instance-ids "+current_instance_id+" --force", color))
+                 print ('%s--Stop | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 stop-instances --instance-ids "+current_instance_id+" --force", color))
               if (state == 'running') or (state == 'stopped'):
-                 print ('%s--Terminate | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 terminate-instances --instance-ids "+current_instance_id, color))
+                 print ('%s--Terminate | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 terminate-instances --instance-ids "+current_instance_id, color))
               if state == 'running': 
                  print ('%s-----' % (prefix))
                  print ('%s--Console | color=%s' % (prefix, color))
@@ -227,22 +229,22 @@ def main(argv):
        
        if len(image_instance_list) > 0: 
           print ('%s---' % prefix)
-          print ('%sTerminate all Virtual Machines | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 terminate-instances --instance-ids "+" ".join(image_instance_list), color))
+          print ('%sTerminate all Virtual Machines | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 terminate-instances --instance-ids "+" ".join(image_instance_list), color))
        print ('%s---' % prefix)
        if len(images) > 1:
-          print ('%sDestroy image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 deregister-image --image-id "+current_image_id + " && /usr/local/bin/aws ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
+          print ('%sDestroy image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " && /usr/local/bin/aws ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
        else:
-          print ('%sDestroy image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "/usr/local/bin/aws", "ec2 deregister-image --image-id "+current_image_id + " --dry-run && /usr/local/bin/aws ec2 delete-snapshot --dry-run --snapshot-id "+current_image_snapshot_id, color))
+          print ('%sDestroy image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " --dry-run && /usr/local/bin/aws ec2 delete-snapshot --dry-run --snapshot-id "+current_image_snapshot_id, color))
        prefix = ''
 
     # cost and usage menu
 
     print ('---')
     totalcost = 0
-    for group in costs['ResultsByTime'][0]['Groups']:
+    for group in monthly_cost['ResultsByTime'][0]['Groups']:
        totalcost += float(group['Metrics']['BlendedCost']['Amount'])
     print ('Cost this month:	 		%s | color=%s' % (color_cost(totalcost,'','USD'),color))
-    for group in costs['ResultsByTime'][0]['Groups']:
+    for group in monthly_cost['ResultsByTime'][0]['Groups']:
        if group['Keys'][0] == 'Tax':
           print('-----')
        print '--%s | color=%s' % (color_cost(group['Metrics']['BlendedCost']['Amount'],group['Keys'][0],group['Metrics']['BlendedCost']['Unit']),color)
