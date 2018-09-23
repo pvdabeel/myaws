@@ -12,8 +12,12 @@ Start, connect to and terminate virtual machines
 See console output in Menu Bar
 ![Imgur](https://i.imgur.com/B17Q9hy.jpg)
 
-Create new virtual machines 
-![Imgur](https://i.imgur.com/VTcVJFY.jpg)
+Create new virtual machines and retrieve up to date EC2 prices
+![Imgur](https://i.imgur.com/tr7sDRb.jpg)
+
+Check your current EC2 spending 
+![Imgur](https://i.imgur.com/XSNjUiQ.jpg)
+
 
 ## Licence: GPL v3
 
