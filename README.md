@@ -24,7 +24,8 @@ Check your current EC2 spending
 ## Installation instructions: 
 
 1. Ensure you have [aws command line tools](https://docs.aws.amazon.com/cli/latest/userguide/cli-install-macos.html) installed
-2. Ensure you have [bitbar](https://github.com/matryer/bitbar/releases/latest) installed.
-3. Ensure your bitbar plugins directory does not have a space in the path (A known bitbar bug)
-4. Copy [myaws.15m.py](myaws.15m.py) to your bitbar plugins folder and chmod +x the file from your terminal in that folder
+2. Execute 'sudo easy_install awspricing' in Terminal.app
+3. Ensure you have [bitbar](https://github.com/matryer/bitbar/releases/latest) installed.
+4. Ensure your bitbar plugins directory does not have a space in the path (A known bitbar bug)
+5. Copy [myaws.15m.py](myaws.15m.py) to your bitbar plugins folder and chmod +x the file from your terminal in that folder
 5. Run bitbar
