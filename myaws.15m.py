@@ -13,6 +13,7 @@
 # Installation instructions: 
 # -------------------------- 
 # Ensure you have the Amazon EC2 CLI installed (see Readme for link)
+# Run 'sudo easy_install tinydb awspricing' in Terminal.app
 # Ensure you have bitbar installed https://github.com/matryer/bitbar/releases/latest
 # Ensure your bitbar plugins directory does not have a space in the path (known bitbar bug)
 # Copy this file to your bitbar plugins folder and chmod +x the file from your terminal in that folder
