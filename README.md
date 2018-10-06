@@ -10,7 +10,7 @@ Start, connect to and terminate virtual machines
 ![Imgur](https://i.imgur.com/1MTAvlX.png)
 
 See console output in Menu Bar
-![Imgur](https://i.imgur.com/B17Q9hy.jpg)
+![Imgur](https://i.imgur.com/9UEMHDsm.jpg)
 
 Create new virtual machines and retrieve up to date EC2 prices
 ![Imgur](https://i.imgur.com/tr7sDRb.jpg)
