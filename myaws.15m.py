@@ -194,8 +194,24 @@ def main(argv):
 
         images       = json.loads(subprocess.check_output(aws_command+" ec2 describe-images --owners "+aws_owner_id+" --query 'Images[*].{ImageId:ImageId,Name:Name,SnapshotId:BlockDeviceMappings[0].Ebs.SnapshotId}'", shell=True))
         instances    = json.loads(subprocess.check_output(aws_command+" ec2 describe-instances --query 'Reservations[*].Instances[*].{PublicDnsName:PublicDnsName,State:State,InstanceType:InstanceType,PublicIpAddress:PublicIpAddress,InstanceId:InstanceId,ImageId:ImageId}'", shell=True))
-        monthly_cost = json.loads(subprocess.check_output(aws_command+" ce get-cost-and-usage --time-period Start="+monthDate.strftime("%Y-%m-%d")+",End="+todayDate.strftime("%Y-%m-%d")+" --granularity MONTHLY --metrics BlendedCost --group-by Type=DIMENSION,Key=SERVICE", shell=True))
-        daily_cost   = json.loads(subprocess.check_output(aws_command+" ce get-cost-and-usage --time-period Start="+monthDate.strftime("%Y-%m-%d")+",End="+todayDate.strftime("%Y-%m-%d")+" --granularity DAILY --metrics BlendedCost --group-by Type=DIMENSION,Key=SERVICE", shell=True))
+        try:
+            with open('/tmp/myaws-costs-monthly'+todayDate.strftime("%Y%m%d")+'.json') as json_file:
+                monthly_cost = json.load(json_file)
+                json_file.close()
+        except: 
+            with open('/tmp/myaws-costs-monthly'+todayDate.strftime("%Y%m%d")+'.json','w') as json_file:
+                monthly_cost = json.loads(subprocess.check_output(aws_command+" ce get-cost-and-usage --time-period Start="+monthDate.strftime("%Y-%m-%d")+",End="+todayDate.strftime("%Y-%m-%d")+" --granularity MONTHLY --metrics BlendedCost --group-by Type=DIMENSION,Key=SERVICE", shell=True))
+                json.dump(monthly_cost,json_file)
+                json_file.close()
+        try:
+            with open('/tmp/myaws-costs-daily'+todayDate.strftime("%Y%m%d")+'.json') as json_file:
+                daily_cost = json.load(json_file)
+                json_file.close()
+        except: 
+            with open('/tmp/myaws-costs-daily'+todayDate.strftime("%Y%m%d")+'.json','w') as json_file:
+                daily_cost   = json.loads(subprocess.check_output(aws_command+" ce get-cost-and-usage --time-period Start="+monthDate.strftime("%Y-%m-%d")+",End="+todayDate.strftime("%Y-%m-%d")+" --granularity DAILY --metrics BlendedCost --group-by Type=DIMENSION,Key=SERVICE", shell=True))
+                json.dump(daily_cost,json_file)
+                json_file.close()
     except: 
        app_print_logo()
        print ('Failed to get data from EC2 | refresh=true terminal=true bash="\'%s\'" param1="%s" color=%s' % (sys.argv[0], 'init', color))
