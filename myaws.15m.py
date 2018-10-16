@@ -143,6 +143,8 @@ def justify(string):
 def justify(string,number):
     return string.ljust(number)
 
+def important(string):
+    return CRED + string + CEND
 
 # The init function: Called to store your AWS access keys
 def init():
@@ -215,6 +217,9 @@ def main(argv):
  
        # print menu with relevant info and actions
        print ('%sDeploy new Virtual Machine | color=%s' % (prefix, color))
+
+       aws_pricing = 1
+       
        for (aws_vmgroup,aws_vmtypelist) in aws_vmtypes:
           for (aws_vmtype,aws_vmdesc) in aws_vmtypelist:
              Q = Query()
@@ -224,6 +229,9 @@ def main(argv):
                 aws_pricing = 0
              print ('%s--%s%s\t\t%s\t\t%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_vmgroup, justify(aws_vmtype,9), justify(aws_vmdesc,20), color_cost(aws_pricing,'Hourly','USD'), aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type "+aws_vmgroup+aws_vmtype+" --key-name "+aws_key_name+" --security-group-ids "+aws_security, color))
           print ('%s-----' % prefix)
+       if (aws_pricing == 0) :
+          print ('%s--%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, important('Update AWS pricing'),sys.argv[0], "update", color))
+          
        print ('%s---' % prefix)
 
        # loop through instances, 
