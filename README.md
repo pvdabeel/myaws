@@ -7,16 +7,16 @@ Create and destroy EC2 images from virtual machines.
 
 
 Start, connect to and terminate virtual machines
-![Imgur](https://i.imgur.com/1MTAvlX.png)
+![Imgur](https://i.imgur.com/yR5iPQy.jpg)
 
 See console output in Menu Bar
-![Imgur](https://i.imgur.com/9UEMHDs.jpg)
+![Imgur](https://i.imgur.com/UpZnhNa.jpg)
 
 Create new virtual machines and retrieve up to date EC2 prices
-![Imgur](https://i.imgur.com/tr7sDRb.jpg)
+![Imgur](https://i.imgur.com/ZnsKTTo.jpg)
 
 Check your current EC2 spending 
-![Imgur](https://i.imgur.com/XSNjUiQ.jpg)
+![Imgur](https://i.imgur.com/n2FEdT1.jpg)
 
 
 ## Licence: GPL v3
