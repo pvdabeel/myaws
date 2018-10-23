@@ -58,6 +58,8 @@ aws_vmtypes  = [('t2',[ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
 # aws ec2 terminate-instances --instance-ids i-0de69865f64ebd6ad
 # aws ec2 stop-instances --instance-ids --force
 # aws ce get-cost-and-usage --time-period Start=2018-09-01,End=2018-09-23 --granularity MONTHLY --metrics BlendedCost UnblendedCost UsageQuantity --group-by Type=DIMENSION,Key=SERVICE
+# aws ec2 describe-instances --instance-id i-0c27fcf159ec94d0d --query 'Reservations[*].Instances[*].LaunchTime'
+
 
 import ast
 import json
@@ -193,7 +195,7 @@ def main(argv):
            monthDate = monthDate.replace(day=1)
 
         images       = json.loads(subprocess.check_output(aws_command+" ec2 describe-images --owners "+aws_owner_id+" --query 'Images[*].{ImageId:ImageId,Name:Name,SnapshotId:BlockDeviceMappings[0].Ebs.SnapshotId}'", shell=True))
-        instances    = json.loads(subprocess.check_output(aws_command+" ec2 describe-instances --query 'Reservations[*].Instances[*].{PublicDnsName:PublicDnsName,State:State,InstanceType:InstanceType,PublicIpAddress:PublicIpAddress,InstanceId:InstanceId,ImageId:ImageId}'", shell=True))
+        instances    = json.loads(subprocess.check_output(aws_command+" ec2 describe-instances --query 'Reservations[*].Instances[*].{PublicDnsName:PublicDnsName,State:State,InstanceType:InstanceType,PublicIpAddress:PublicIpAddress,InstanceId:InstanceId,ImageId:ImageId,LaunchTime:LaunchTime}'", shell=True))
         try:
             with open('/tmp/myaws-costs-monthly'+todayDate.strftime("%Y%m%d")+'.json') as json_file:
                 monthly_cost = json.load(json_file)
@@ -266,8 +268,14 @@ def main(argv):
               dnsname = instance_json['PublicDnsName']
               vmtype = instance_json['InstanceType']
               ipaddress = instance_json['PublicIpAddress']
+              launchtime = datetime.datetime.strptime(instance_json['LaunchTime'],'%Y-%m-%dT%H:%M:%S.%fZ')
+              uptime = datetime.datetime.now() - launchtime
+              uptime_d = divmod(uptime.total_seconds(),86400)
+              uptime_h = divmod(uptime_d[1], 3600)
+              uptime_m = divmod(uptime_h[1], 60)
 
-              print ('%s%s		%s		ip: %s ' % (prefix, color_state(state), justify(vmtype,10), ipaddress))
+              print ('%s%s\t\t%sd:%sh%sm\t\t%s\t\tip: %s ' % (prefix, color_state(state), int(uptime_d[0]),int(uptime_h[0]),int(uptime_m[0]), justify(vmtype,10), ipaddress))
+
               if state == 'running': 
                 print ('%s--Connect | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
               if state == 'stopped':
