@@ -269,7 +269,7 @@ def main(argv):
               vmtype = instance_json['InstanceType']
               ipaddress = instance_json['PublicIpAddress']
               launchtime = datetime.datetime.strptime(instance_json['LaunchTime'],'%Y-%m-%dT%H:%M:%S.%fZ')
-              uptime = datetime.datetime.now() - launchtime
+              uptime = datetime.datetime.utcnow() - launchtime
               uptime_d = divmod(uptime.total_seconds(),86400)
               uptime_h = divmod(uptime_d[1], 3600)
               uptime_m = divmod(uptime_h[1], 60)
