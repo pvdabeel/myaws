@@ -48,8 +48,10 @@ aws_vmtypes  = [('t2',[ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
                         ('.24xlarge','(  96 vcpu, 384Gb vram )\t') ]), 
                 ('c5',[ ('.4xlarge', '(  16 vcpu, 32Gb vram )\t'), 
                         ('.9xlarge', '(  36 vcpu, 72Gb vram )\t'), 
-                        ('.18xlarge','(  72 vcpu, 144Gb vram )\t') ]), 
-                ('x1',[ ('.32xlarge','( 128 vcpu, 1952Gb vram )')  ]) ]
+                        ('.18xlarge','(  72 vcpu, 144Gb vram )\t') ]),
+                ('x1',[ ('.16xlarge','(  64 vcpu, 976Gb vram )\t'),
+                        ('.32xlarge','( 128 vcpu, 1952Gb vram )')  ]), 
+                ('i3',[ ('.metal',   '(  72 core, 512Gb ram )\t') ]) ] 
  
 
 # aws ec2 describe-images --owners 615416975922 --query 'Images[*].{ID:ImageId}'
