@@ -291,15 +291,15 @@ def main(argv):
                  print ('%s--Terminate | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 terminate-instances --instance-ids "+current_instance_id, color))
               if state == 'running': 
                  print ('%s-----' % (prefix))
-                 print ('%s--Console Screenshot| color=%s' % (prefix, color))
+                 print ('%s--Screenshot| color=%s' % (prefix, color))
                  console = json.loads(subprocess.check_output("/usr/local/bin/aws ec2 get-console-screenshot --instance-id "+current_instance_id, shell=True))['ImageData']
                  print ('%s----|image="%s" | color=%s' % (prefix, console, color))
-                 print ('%s-----' % (prefix))
-                 print ('%s--Console Output| refresh=true terminal = true bash="%s" param1="%s" color=%s' % (prefix, "cat", "/tmp/"+current_instance_id+".console.log", color))
-                 with open("/tmp/"+current_instance_id+".console.log",'w') as console_file:
-                    serial  = str(subprocess.check_output("/usr/local/bin/aws ec2 get-console-output --output text --instance-id "+current_instance_id, shell=True))
-                    console_file.write(serial)
-                    console_file.close()
+              print ('%s-----' % (prefix))
+              print ('%s--Serial Console Log| refresh=true terminal = true bash="%s" param1="%s" color=%s' % (prefix, "cat", "/tmp/"+current_instance_id+".console.log", color))
+              with open("/tmp/"+current_instance_id+".console.log",'w') as console_file:
+                 serial  = str(subprocess.check_output("/usr/local/bin/aws ec2 get-console-output --output text --instance-id "+current_instance_id, shell=True))
+                 console_file.write(serial)
+                 console_file.close()
        
        if len(image_instance_list) > 0: 
           print ('%s---' % prefix)
