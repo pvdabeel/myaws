@@ -59,9 +59,9 @@ aws_vmtypes  = [('t2',[ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
 # aws ec2 describe-instances --query 'Reservations[*].Instances[*].{ID:PublicDnsName,State:State}'
 # aws ec2 terminate-instances --instance-ids i-0de69865f64ebd6ad
 # aws ec2 stop-instances --instance-ids --force
-# aws ce get-cost-and-usage --time-period Start=2018-09-01,End=2018-09-23 --granularity MONTHLY --metrics BlendedCost UnblendedCost UsageQuantity --group-by Type=DIMENSION,Key=SERVICE
 # aws ec2 describe-instances --instance-id i-0c27fcf159ec94d0d --query 'Reservations[*].Instances[*].LaunchTime'
-
+# aws ec2 get-console-output --instance-id i-0ed95956c74a187ac --output text
+# aws ce get-cost-and-usage --time-period Start=2018-09-01,End=2018-09-23 --granularity MONTHLY --metrics BlendedCost UnblendedCost UsageQuantity --group-by Type=DIMENSION,Key=SERVICE
 
 import ast
 import json
@@ -291,9 +291,15 @@ def main(argv):
                  print ('%s--Terminate | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 terminate-instances --instance-ids "+current_instance_id, color))
               if state == 'running': 
                  print ('%s-----' % (prefix))
-                 print ('%s--Console | color=%s' % (prefix, color))
+                 print ('%s--Console Screenshot| color=%s' % (prefix, color))
                  console = json.loads(subprocess.check_output("/usr/local/bin/aws ec2 get-console-screenshot --instance-id "+current_instance_id, shell=True))['ImageData']
                  print ('%s----|image="%s" | color=%s' % (prefix, console, color))
+                 print ('%s-----' % (prefix))
+                 print ('%s--Console Output| refresh=true terminal = true bash="%s" param1="%s" color=%s' % (prefix, "cat", "/tmp/"+current_instance_id+".console.log", color))
+                 with open("/tmp/"+current_instance_id+".console.log",'w') as console_file:
+                    serial  = str(subprocess.check_output("/usr/local/bin/aws ec2 get-console-output --output text --instance-id "+current_instance_id, shell=True))
+                    console_file.write(serial)
+                    console_file.close()
        
        if len(image_instance_list) > 0: 
           print ('%s---' % prefix)
