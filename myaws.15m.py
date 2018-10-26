@@ -112,6 +112,8 @@ def color_state(state):
         return justify('deleted',10)
     if state == 'shutting-down':
         return CRED + justify('stopping',10) + CEND
+    if state == 'stopping':
+        return CRED + justify('stopping',10) + CEND
     else:
         return state
 
