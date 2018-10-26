@@ -295,8 +295,8 @@ def main(argv):
                  console = json.loads(subprocess.check_output("/usr/local/bin/aws ec2 get-console-screenshot --instance-id "+current_instance_id, shell=True))['ImageData']
                  print ('%s----|image="%s" | color=%s' % (prefix, console, color))
               print ('%s-----' % (prefix))
-              print ('%s--Serial Console Log| refresh=true terminal = true bash="%s" param1="%s" color=%s' % (prefix, "cat", "/tmp/"+current_instance_id+".console.log", color))
-              with open("/tmp/"+current_instance_id+".console.log",'w') as console_file:
+              print ('%s--Serial Console Log| refresh=true terminal = true bash="%s" param1="%s" color=%s' % (prefix, "cat", "/tmp/myaws-"+current_instance_id+".console.log", color))
+              with open("/tmp/myaws-"+current_instance_id+".console.log",'w') as console_file:
                  serial  = str(subprocess.check_output("/usr/local/bin/aws ec2 get-console-output --output text --instance-id "+current_instance_id, shell=True))
                  console_file.write(serial)
                  console_file.close()
