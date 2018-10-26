@@ -278,7 +278,7 @@ def main(argv):
               uptime_h = divmod(uptime_d[1], 3600)
               uptime_m = divmod(uptime_h[1], 60)
 
-              print ('%s%s\t\t%sd:%sh%sm\t\t%s\t\tip: %s ' % (prefix, color_state(state), int(uptime_d[0]),int(uptime_h[0]),int(uptime_m[0]), justify(vmtype,10), ipaddress))
+              print ('%s%s\t\t%sd:%sh%sm\t\t%s\t\tip: %s ' % (prefix, color_state(state), int(uptime_d[0]),int(uptime_h[0]),int(uptime_m[0]), justify(vmtype,10), ipaddress ))
 
               if state == 'running': 
                 print ('%s--Connect | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
@@ -294,12 +294,13 @@ def main(argv):
                  print ('%s--Screenshot| color=%s' % (prefix, color))
                  console = json.loads(subprocess.check_output("/usr/local/bin/aws ec2 get-console-screenshot --instance-id "+current_instance_id, shell=True))['ImageData']
                  print ('%s----|image="%s" | color=%s' % (prefix, console, color))
-              print ('%s-----' % (prefix))
-              print ('%s--Serial Console Log| refresh=true terminal = true bash="%s" param1="%s" color=%s' % (prefix, "cat", "/tmp/myaws-"+current_instance_id+".console.log", color))
-              with open("/tmp/myaws-"+current_instance_id+".console.log",'w') as console_file:
-                 serial  = str(subprocess.check_output("/usr/local/bin/aws ec2 get-console-output --output text --instance-id "+current_instance_id, shell=True))
-                 console_file.write(serial)
-                 console_file.close()
+              if state != 'terminated':
+                 print ('%s-----' % (prefix))
+                 print ('%s--Serial Console Log| refresh=true terminal = true bash="%s" param1="%s" color=%s' % (prefix, "cat", "/tmp/myaws-"+current_instance_id+".console.log", color))
+                 with open("/tmp/myaws-"+current_instance_id+".console.log",'w') as console_file:
+                    serial  = str(subprocess.check_output("/usr/local/bin/aws ec2 get-console-output --output text --instance-id "+current_instance_id, shell=True))
+                    console_file.write(serial)
+                    console_file.close()
        
        if len(image_instance_list) > 0: 
           print ('%s---' % prefix)
