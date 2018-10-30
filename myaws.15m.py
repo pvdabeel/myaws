@@ -292,8 +292,11 @@ def main(argv):
               if state == 'running': 
                  print ('%s-----' % (prefix))
                  print ('%s--Screenshot| color=%s' % (prefix, color))
-                 console = json.loads(subprocess.check_output("/usr/local/bin/aws ec2 get-console-screenshot --instance-id "+current_instance_id, shell=True))['ImageData']
-                 print ('%s----|image="%s" | color=%s' % (prefix, console, color))
+                 try:
+                    console = json.loads(subprocess.check_output("/usr/local/bin/aws ec2 get-console-screenshot --instance-id "+current_instance_id, shell=True))['ImageData']
+                    print ('%s----|image="%s" | color=%s' % (prefix, console, color))
+                 except:
+                    print ('%s----|Unable to get a screenshot | color=%s' % (prefix, color))
               if state != 'terminated':
                  print ('%s-----' % (prefix))
                  print ('%s--Serial Console Log| refresh=true terminal = true bash="%s" param1="%s" color=%s' % (prefix, "cat", "/tmp/myaws-"+current_instance_id+".console.log", color))
