@@ -125,7 +125,9 @@ def color_cost(cost,desc,rate):
        return CRED + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + '\t ' + CEND + ' - ' + desc
     elif desc == 'Total': 
        return CGREEN + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + '\t ' + CEND + ' - ' + desc
-    elif desc == 'Hourly': 
+    elif desc == 'Hourly':
+       if cost == 'n/a':
+          return CGRAY + short_rate + ' ' + justify(cost,11) + ' ' + CEND + ' per hour'
        if (float(cost) < vm_cheap):
           return CGREEN + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + ' ' + CEND + ' per hour'
        if (float(cost) >= vm_cheap) and (cost <= vm_expensive):
@@ -165,7 +167,10 @@ def update():
     # Retrieve latest pricing for vm and insert in database
     for (aws_vmgroup,aws_vmtypelist) in aws_vmtypes:
        for (aws_vmtype,aws_vmdesc) in aws_vmtypelist:
-          aws_pricing = ec2_offer.ondemand_hourly(aws_vmgroup+aws_vmtype,operating_system=aws_ostype,region=aws_region)
+          try: 
+             aws_pricing = ec2_offer.ondemand_hourly(aws_vmgroup+aws_vmtype,operating_system=aws_ostype,region=aws_region)
+          except:
+             aws_pricing = 'n/a'
           database.insert({'type':aws_vmgroup+aws_vmtype,'pricing':aws_pricing})
 
 # The main function
