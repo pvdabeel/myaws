@@ -346,7 +346,7 @@ def main(argv):
     dailycost = 0
     for day in daily_cost['ResultsByTime']:
        for group in day['Groups']:
-          dailycost = float(group['Metrics']['BlendedCost']['Amount'])
+          dailycost += float(group['Metrics']['BlendedCost']['Amount'])
        print ('----%s : %s | color=%s' % (day['TimePeriod']['Start'],color_cost(dailycost,'','USD'),color))
        for group in day['Groups']:
           if group['Keys'][0] == 'Tax':
