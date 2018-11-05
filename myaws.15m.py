@@ -131,7 +131,7 @@ def color_cost(cost,desc,rate):
           return CGRAY + short_rate + ' ' + justify(cost,11) + ' ' + CEND + ' per hour'
        if (float(cost) < vm_cheap):
           return CGREEN + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + ' ' + CEND + ' per hour'
-       if (float(cost) >= vm_cheap) and (cost <= vm_expensive):
+       if (float(cost) >= vm_cheap) and (float(cost) <= vm_expensive):
           return CYELLOW + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + ' ' + CEND + ' per hour'
        if (float(cost) > vm_expensive ):
           return CRED + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + ' ' + CEND + ' per hour'
@@ -172,9 +172,9 @@ def update():
              # DB format change (bug in awspricing) aws_pricing = ec2_offer.ondemand_hourly(aws_vmgroup+aws_vmtype,operating_system=aws_ostype,region=aws_region)
              # Ondemand makes a distinction between Used, ReservationBox, ...
              sku = ec2_offer.search_skus(instance_type=aws_vmgroup+aws_vmtype,operating_system=aws_ostype,tenancy='Shared',location='EU (Frankfurt)',licenseModel='No License required', preInstalledSw='NA',capacitystatus='Used').pop()
+             print ec2_offer._offer_data['terms']['OnDemand'][sku]
              aws_pricing = next(six.itervalues(next(six.itervalues(ec2_offer._offer_data['terms']['OnDemand'][sku]))['priceDimensions']))['pricePerUnit']['USD']
-             if (aws_pricing == None):
-                aws_pricing = 'n/a'
+             print aws_pricing
           except:
              aws_pricing = 'n/a'
           database.insert({'type':aws_vmgroup+aws_vmtype,'pricing':aws_pricing})
