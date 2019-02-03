@@ -74,7 +74,6 @@ import time
 import os
 import subprocess
 import requests
-import time
 import decimal
 import awspricing
 import six
