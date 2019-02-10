@@ -87,6 +87,8 @@ from os.path import expanduser
 home         = expanduser("~")
 state_dir    = home+'/.state/myaws'
 
+if not os.path.exists(state_dir):                                               
+    os.makedirs(state_dir)    
 
 # Tiny DB to store pricing
 database = TinyDB(state_dir+'/myawspricing.json')
