@@ -188,7 +188,7 @@ def update():
              aws_pricing = 'n/a'
           database.insert({'type':aws_vmgroup+aws_vmtype,'pricing':aws_pricing})
     # Store timestamp
-    database.insert({'timestamp':str(datetime.date.today())})
+    database.insert({'timestamp':str(datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))})
 
 
 # The main function
