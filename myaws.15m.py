@@ -167,6 +167,7 @@ def important(string):
 def init():
     print 'Please run \'aws configure\', then call run \'myaws.15m.py update\''
 
+
 # The update function: Retrieve EC2 pricing 
 def update(): 
     # Purge existing database
@@ -186,6 +187,9 @@ def update():
           except:
              aws_pricing = 'n/a'
           database.insert({'type':aws_vmgroup+aws_vmtype,'pricing':aws_pricing})
+    # Store timestamp
+    database.insert({'timestamp':str(datetime.date.today())})
+
 
 # The main function
 def main(argv):
@@ -270,8 +274,12 @@ def main(argv):
                 aws_pricing = 0
              print ('%s--%s%s\t\t%s\t\t%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_vmgroup, justify(aws_vmtype,9), justify(aws_vmdesc,20), color_cost(aws_pricing,'Hourly','USD'), aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type "+aws_vmgroup+aws_vmtype+" --key-name "+aws_key_name+" --security-group-ids "+aws_security, color))
           print ('%s-----' % prefix)
-       if (aws_pricing == 0) :
+       if aws_pricing == 0:
           print ('%s--%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, important('Update AWS pricing'),sys.argv[0], "update", color))
+       else:
+          print ('%s--Last updated:\t%s | color=%s' % (prefix, database.search(Q.timestamp)[0]['timestamp'], color))
+          print ('%s----%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, 'Update AWS pricing',sys.argv[0], "update", color))
+    
           
        print ('%s---' % prefix)
 
