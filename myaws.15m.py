@@ -81,8 +81,15 @@ import six
 from datetime import date
 from tinydb import TinyDB, Query
 
+from os.path import expanduser
+
+# Location where to store state files
+home         = expanduser("~")
+state_dir    = home+'/.state/myaws'
+
+
 # Tiny DB to store pricing
-database = TinyDB('/tmp/myawspricing.json')
+database = TinyDB(state_dir+'/myawspricing.json')
 
 # Nice ANSI colors
 CEND    = '\33[0m'
@@ -211,20 +218,20 @@ def main(argv):
         images       = json.loads(subprocess.check_output(aws_command+" ec2 describe-images --owners "+aws_owner_id+" --query 'Images[*].{ImageId:ImageId,Name:Name,SnapshotId:BlockDeviceMappings[0].Ebs.SnapshotId}'", shell=True))
         instances    = json.loads(subprocess.check_output(aws_command+" ec2 describe-instances --query 'Reservations[*].Instances[*].{PublicDnsName:PublicDnsName,State:State,InstanceType:InstanceType,PublicIpAddress:PublicIpAddress,InstanceId:InstanceId,ImageId:ImageId,LaunchTime:LaunchTime}'", shell=True))
         try:
-            with open('/tmp/myaws-costs-monthly'+todayDate.strftime("%Y%m%d")+'.json') as json_file:
+            with open(state_dir+'/myaws-costs-monthly'+todayDate.strftime("%Y%m%d")+'.json') as json_file:
                 monthly_cost = json.load(json_file)
                 json_file.close()
         except: 
-            with open('/tmp/myaws-costs-monthly'+todayDate.strftime("%Y%m%d")+'.json','w') as json_file:
+            with open(state_dir+'/myaws-costs-monthly'+todayDate.strftime("%Y%m%d")+'.json','w') as json_file:
                 monthly_cost = json.loads(subprocess.check_output(aws_command+" ce get-cost-and-usage --time-period Start="+monthDate.strftime("%Y-%m-%d")+",End="+todayDate.strftime("%Y-%m-%d")+" --granularity MONTHLY --metrics BlendedCost --group-by Type=DIMENSION,Key=SERVICE", shell=True))
                 json.dump(monthly_cost,json_file)
                 json_file.close()
         try:
-            with open('/tmp/myaws-costs-daily'+todayDate.strftime("%Y%m%d")+'.json') as json_file:
+            with open(state_dir+'/myaws-costs-daily'+todayDate.strftime("%Y%m%d")+'.json') as json_file:
                 daily_cost = json.load(json_file)
                 json_file.close()
         except: 
-            with open('/tmp/myaws-costs-daily'+todayDate.strftime("%Y%m%d")+'.json','w') as json_file:
+            with open(state_dir+'/myaws-costs-daily'+todayDate.strftime("%Y%m%d")+'.json','w') as json_file:
                 daily_cost   = json.loads(subprocess.check_output(aws_command+" ce get-cost-and-usage --time-period Start="+monthDate.strftime("%Y-%m-%d")+",End="+todayDate.strftime("%Y-%m-%d")+" --granularity DAILY --metrics BlendedCost --group-by Type=DIMENSION,Key=SERVICE", shell=True))
                 json.dump(daily_cost,json_file)
                 json_file.close()
@@ -309,8 +316,8 @@ def main(argv):
                     print ('%s----|Unable to get a screenshot | color=%s' % (prefix, color))
               if state != 'terminated':
                  print ('%s-----' % (prefix))
-                 print ('%s--Serial Console Log| refresh=true terminal = true bash="%s" param1="%s" color=%s' % (prefix, "cat", "/tmp/myaws-"+current_instance_id+".console.log", color))
-                 with open("/tmp/myaws-"+current_instance_id+".console.log",'w') as console_file:
+                 print ('%s--Serial Console Log| refresh=true terminal = true bash="%s" param1="%s" color=%s' % (prefix, "cat", state_dir+"/myaws-"+current_instance_id+".console.log", color))
+                 with open(state_dir+"/myaws-"+current_instance_id+".console.log",'w') as console_file:
                     serial  = str(subprocess.check_output("/usr/local/bin/aws ec2 get-console-output --output text --instance-id "+current_instance_id, shell=True))
                     console_file.write(serial)
                     console_file.close()
