@@ -55,6 +55,9 @@ aws_vmtypes  = [('t2',[ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
 
 aws_default_vmtype = 'c5.4xlarge'
 
+# Command to be called inside instance to update it
+
+update_cmd = 'update' 
 
 # aws ec2 describe-images --owners 615416975922 --query 'Images[*].{ID:ImageId}'
 # aws ec2 run-instances --image-id ami-089fc69c2ca496809 --count 1 --instance-type t2.micro --key-name gentoo --security-group-ids sg-bce547d1
@@ -236,12 +239,8 @@ def update_image():
 
     # execute update
     print ('--- Updating instance:')
-    try: 
-        subprocess.call("ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"uname -a\"", shell=True)
-    #   subprocess.call("ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"emerge --sync && emerge --regen --jobs=16 && egencache --repo=gentoo --update\"", shell=True)
-    #   subprocess.call("ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"emerge --update --deep --newuse world --jobs=16\"", shell=True)
-    #   subprocess.call("ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"eupdatedb\"", shell=True)
-    #   subprocess.call("ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"prelink -amR\"", shell=True)
+    try:
+        subprocess.call("ssh -q -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"bash -icl "+update_cmd+"\"", shell=True)
     except:
         print (CRED+'!!! Failed to update instance'+CEND)
         # Destroy instance
@@ -252,7 +251,7 @@ def update_image():
     print ('--- Creating new image:    '),
     try:
         updated_ami = json.loads(subprocess.check_output(aws_command+" ec2 create-image --instance-id "+instance_id+" --name Linux-"+time.strftime("%Y%m%d-%Hh%M"), shell=True))
-        print (CGREEN+updated_ami+CEND) 
+        print (CGREEN+'ok'+CEND) 
     except: 
         print (CRED+'failed'+CEND)
         print (CRED+'!!! Failed to create image'+CEND)
@@ -267,7 +266,7 @@ def update_image():
         print (CRED+'!!! Instance cleanup failed'+CEND)
 
 
-    print ('>>> '+CGREEN+'Succesfully'+CEND+' updated image, please test before removing old image')
+    print ('>>> Updated image created')
     return
 
 
@@ -341,10 +340,15 @@ def main(argv):
        current_image_id = image['ImageId']
        current_image_snapshot_id = image['SnapshotId']
  
-       # create a submenu for every AMI
-       print ('%sImage : %s | color=%s' % (prefix, image['Name'], color))
-       prefix = '--'
- 
+       # create a submenu for every AMI which whose underlying storage is ready
+       if (current_image_snapshot_id):
+           print ('%sImage : %s | color=%s' % (prefix, image['Name'], color))
+           prefix = '--'
+       else:
+           print ('%sImage : %s | color=%s' % (prefix, image['Name'], info_color))
+           continue
+
+
        # print menu with relevant info and actions
        print ('%sDeploy new Virtual Machine | color=%s' % (prefix, color))
 
@@ -369,8 +373,8 @@ def main(argv):
           
        print ('%s---' % prefix)
 
-       # loop through instances, 
 
+       # loop through instances, 
        image_instance_list = []
 
        for instance in instances:
@@ -391,7 +395,7 @@ def main(argv):
               uptime_h = divmod(uptime_d[1], 3600)
               uptime_m = divmod(uptime_h[1], 60)
 
-              print ('%s%s\t\t%sd:%sh%sm\t\t%s\t\tip: %s ' % (prefix, color_state(state), int(uptime_d[0]),int(uptime_h[0]),int(uptime_m[0]), justify(vmtype,10), ipaddress ))
+              print ('%s%s\t\t%sd:%sh%sm \t\t%s\t\tip: %s ' % (prefix, color_state(state), int(uptime_d[0]),int(uptime_h[0]),int(uptime_m[0]), justify(vmtype,10), ipaddress ))
 
               if state == 'running': 
                 print ('%s--Connect | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
@@ -421,14 +425,18 @@ def main(argv):
        if len(image_instance_list) > 0: 
           print ('%s---' % prefix)
           print ('%sTerminate all Virtual Machines | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 terminate-instances --instance-ids "+" ".join(image_instance_list), color))
-       print ('%s---' % prefix)
-       print ('%sUpdate image | refresh=true terminal=true bash="%s" param1="%s" param2="%s" color=%s' % (prefix, sys.argv[0], "update_image", current_image_id, color))
-       print ('%s---' % prefix)
-       if len(images) > 1:
-          print ('%sDestroy image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " && /usr/local/bin/aws ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
-       else:
-          print ('%sDestroy image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " --dry-run && /usr/local/bin/aws ec2 delete-snapshot --dry-run --snapshot-id "+current_image_snapshot_id, color))
+
+       if (current_image_snapshot_id):  
+          print ('%s---' % prefix)
+          print ('%sUpdate image | refresh=true terminal=true bash="%s" param1="%s" param2="%s" color=%s' % (prefix, sys.argv[0], "update_image", current_image_id, color))
+          print ('%s---' % prefix)
+
+          if (len(images) > 1):
+             print ('%sDestroy image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " && /usr/local/bin/aws ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
+          else:
+             print ('%sDestroy image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " --dry-run && /usr/local/bin/aws ec2 delete-snapshot --dry-run --snapshot-id "+current_image_snapshot_id, color))
        prefix = ''
+
 
     # cost and usage menu
 
