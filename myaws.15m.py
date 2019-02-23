@@ -237,7 +237,7 @@ def update_image():
     # execute update
     print ('--- Updating instance:')
     try: 
-        update_log = subprocess.check_output("ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"emerge --sync && emerge --regen --jobs=16 && egencache --repo=gentoo --update && emerge --update --deep --newuse world --jobs=16 && eupdatedb && prelink -amR\"", stderr=subprocess.STDOUT, shell=True)
+        subprocess.call("ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"uname -a && emerge --sync && emerge --regen --jobs=16 && egencache --repo=gentoo --update && emerge --update --deep --newuse world --jobs=16 && eupdatedb && prelink -amR\"", shell=True)
     except:
         print (CRED+'!!! Failed to update instance'+CEND)
         # Destroy instance
