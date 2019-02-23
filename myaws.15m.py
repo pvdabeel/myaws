@@ -426,15 +426,14 @@ def main(argv):
           print ('%s---' % prefix)
           print ('%sTerminate all Virtual Machines | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 terminate-instances --instance-ids "+" ".join(image_instance_list), color))
 
-       if (current_image_snapshot_id):  
-          print ('%s---' % prefix)
-          print ('%sUpdate image | refresh=true terminal=true bash="%s" param1="%s" param2="%s" color=%s' % (prefix, sys.argv[0], "update_image", current_image_id, color))
-          print ('%s---' % prefix)
+       print ('%s---' % prefix)
+       print ('%sImage' % prefix) 
+       print ('%s--Update | refresh=true terminal=true bash="%s" param1="%s" param2="%s" color=%s' % (prefix, sys.argv[0], "update_image", current_image_id, color))
 
-          if (len(images) > 1):
-             print ('%sDestroy image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " && /usr/local/bin/aws ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
-          else:
-             print ('%sDestroy image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " --dry-run && /usr/local/bin/aws ec2 delete-snapshot --dry-run --snapshot-id "+current_image_snapshot_id, color))
+       if (len(images) > 1):
+          print ('%s--Destroy | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " && /usr/local/bin/aws ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
+       else:
+          print ('%s--Destroy | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " --dry-run && /usr/local/bin/aws ec2 delete-snapshot --dry-run --snapshot-id "+current_image_snapshot_id, info_color))
        prefix = ''
 
 
