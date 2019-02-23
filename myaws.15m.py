@@ -277,7 +277,7 @@ def main(argv):
  
     # CASE 1b: update_pricing was called 
     if 'update_pricing' in argv:
-       update_price()
+       update_pricing()
        return
 
     # CASE 1c: update-image was called
