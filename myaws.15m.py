@@ -237,7 +237,11 @@ def update_image():
     # execute update
     print ('--- Updating instance:')
     try: 
-        subprocess.call("ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"uname -a && emerge --sync && emerge --regen --jobs=16 && egencache --repo=gentoo --update && emerge --update --deep --newuse world --jobs=16 && eupdatedb && prelink -amR\"", shell=True)
+        subprocess.call("ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"uname -a\"", shell=True)
+    #   subprocess.call("ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"emerge --sync && emerge --regen --jobs=16 && egencache --repo=gentoo --update\"", shell=True)
+    #   subprocess.call("ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"emerge --update --deep --newuse world --jobs=16\"", shell=True)
+    #   subprocess.call("ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"eupdatedb\"", shell=True)
+    #   subprocess.call("ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"prelink -amR\"", shell=True)
     except:
         print (CRED+'!!! Failed to update instance'+CEND)
         # Destroy instance
@@ -248,13 +252,13 @@ def update_image():
     print ('--- Creating new image:    '),
     try:
         updated_ami = json.loads(subprocess.check_output(aws_command+" ec2 create-image --instance-id "+instance_id+" --name Linux-"+time.strftime("%Y%m%d-%Hh%M"), shell=True))
-        print (CGREEN+'ok'+CEND) 
+        print (CGREEN+updated_ami+CEND) 
     except: 
         print (CRED+'failed'+CEND)
         print (CRED+'!!! Failed to create image'+CEND)
 
     # Cleanup Destroy instance
-    print ('--- Cleanup instance:       '),
+    print ('--- Cleanup instance:      '),
     try: 
         json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
         print (CGREEN+'ok'+CEND)
@@ -263,7 +267,7 @@ def update_image():
         print (CRED+'!!! Instance cleanup failed'+CEND)
 
 
-    print ('>>> '+GREEN+'Succesfully'+CEND+' updated image, please test before removing old image')
+    print ('>>> '+CGREEN+'Succesfully'+CEND+' updated image, please test before removing old image')
     return
 
 
