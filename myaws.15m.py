@@ -52,7 +52,9 @@ aws_vmtypes  = [('t2',[ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
                 ('x1',[ ('.16xlarge','(  64 vcpu, 976Gb vram )\t'),
                         ('.32xlarge','( 128 vcpu, 1952Gb vram )')  ]), 
                 ('i3',[ ('.metal',   '(  72 core, 512Gb ram )\t') ]) ] 
- 
+
+aws_default_vmtype = 'c5.4xlarge'
+
 
 # aws ec2 describe-images --owners 615416975922 --query 'Images[*].{ID:ImageId}'
 # aws ec2 run-instances --image-id ami-089fc69c2ca496809 --count 1 --instance-type t2.micro --key-name gentoo --security-group-ids sg-bce547d1
@@ -165,11 +167,11 @@ def important(string):
 
 # The init function: Called to store your AWS access keys
 def init():
-    print 'Please run \'aws configure\', then call run \'myaws.15m.py update\''
+    print 'Please run \'aws configure\''
 
 
-# The update function: Retrieve EC2 pricing 
-def update(): 
+# The update-pricing function: Retrieve EC2 pricing 
+def update_pricing(): 
     # Purge existing database
     database.purge()
     # Get an EC2 price list from amazon
@@ -191,6 +193,80 @@ def update():
     database.insert({'timestamp':str(datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))})
 
 
+# The update-image function: Update an EC2 image
+def update_image():
+    if (len(sys.argv) != 3): 
+        print ('Please provide an ami name as argument')
+        return
+    ami_to_update = sys.argv[2]
+   
+    print ('>>> Updating image:         '+CGREEN+ami_to_update+CEND)
+    
+    # for the given AMI image, spawn an instance
+    print ('--- Deploying instance:     '+CGREEN+aws_default_vmtype+CEND)
+    try: 
+        instance_id = json.loads(subprocess.check_output(aws_command+" ec2 run-instances --image-id "+ami_to_update+" --instance-type "+aws_default_vmtype+" --key-name "+aws_key_name+" --security-group-ids "+aws_security, shell=True))['Instances'][0]['InstanceId']
+    except: 
+        print (CRED+'!!! Failed to deploy instance'+CEND) 
+        return
+    print ('--- Instance deployed:      '+CGREEN+instance_id+CEND)
+
+    # wait until instance is up and running 
+    print ('--- Checking instance:     '),
+    try:
+        subprocess.check_output(aws_command+" ec2 wait instance-running --instance-ids "+instance_id, shell=True)
+        print (CGREEN+'running'+CEND)
+    except: 
+        print (CRED+'failed'+CEND)
+        print (CRED+'!!! Instance failed to reach running state'+CEND)
+        # Destroy instance
+        json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
+        return
+
+    print ('--- Instance dnsname:      '),
+    try:
+        instance_dns = json.loads(subprocess.check_output(aws_command+" ec2 describe-instances --instance-ids "+instance_id+" --query 'Reservations[*].Instances[*].{PublicDnsName:PublicDnsName,State:State}'", shell=True))[0][0]['PublicDnsName']
+        print (CGREEN+instance_dns+CEND)
+    except: 
+        print (CRED+'failed'+CEND)
+        print (CRED+'!!! Failed to get instance dnsname'+CEND)
+         # Destroy instance
+        json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
+        return
+
+    # execute update
+    print ('--- Updating instance:')
+    try: 
+        update_log = subprocess.check_output("ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"emerge --sync && emerge --regen --jobs=16 && egencache --repo=gentoo --update && emerge --update --deep --newuse world --jobs=16 && eupdatedb && prelink -amR\"", stderr=subprocess.STDOUT, shell=True)
+    except:
+        print (CRED+'!!! Failed to update instance'+CEND)
+        # Destroy instance
+        json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
+        return
+
+    # create new image
+    print ('--- Creating new image:    '),
+    try:
+        updated_ami = json.loads(subprocess.check_output(aws_command+" ec2 create-image --instance-id "+instance_id+" --name Linux-"+time.strftime("%Y%m%d-%Hh%M"), shell=True))
+        print (CGREEN+'ok'+CEND) 
+    except: 
+        print (CRED+'failed'+CEND)
+        print (CRED+'!!! Failed to create image'+CEND)
+
+    # Cleanup Destroy instance
+    print ('--- Cleanup instance:       '),
+    try: 
+        json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
+        print (CGREEN+'ok'+CEND)
+    except:
+        print (CRED+'failed'+CEND)
+        print (CRED+'!!! Instance cleanup failed'+CEND)
+
+
+    print ('>>> '+GREEN+'Succesfully'+CEND+' updated image, please test before removing old image')
+    return
+
+
 # The main function
 def main(argv):
 
@@ -199,9 +275,14 @@ def main(argv):
        init()
        return
  
-    # CASE 1b: update was called 
-    if 'update' in argv:
-       update()
+    # CASE 1b: update_pricing was called 
+    if 'update_pricing' in argv:
+       update_price()
+       return
+
+    # CASE 1c: update-image was called
+    if 'update_image' in argv:
+       update_image()
        return
   
 
@@ -275,10 +356,11 @@ def main(argv):
              print ('%s--%s%s\t\t%s\t\t%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_vmgroup, justify(aws_vmtype,9), justify(aws_vmdesc,20), color_cost(aws_pricing,'Hourly','USD'), aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type "+aws_vmgroup+aws_vmtype+" --key-name "+aws_key_name+" --security-group-ids "+aws_security, color))
           print ('%s-----' % prefix)
        if aws_pricing == 0:
-          print ('%s--%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, important('Update AWS pricing'),sys.argv[0], "update", color))
+          print ('%s--%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, important('Update AWS pricing'),sys.argv[0], "update_pricing", color))
+
        else:
           print ('%s--Last updated:\t%s | color=%s' % (prefix, database.search(Q.timestamp)[0]['timestamp'], color))
-          print ('%s----%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, 'Update AWS pricing',sys.argv[0], "update", color))
+          print ('%s----%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, 'Update AWS pricing',sys.argv[0], "update_pricing", color))
     
           
        print ('%s---' % prefix)
@@ -335,6 +417,8 @@ def main(argv):
        if len(image_instance_list) > 0: 
           print ('%s---' % prefix)
           print ('%sTerminate all Virtual Machines | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 terminate-instances --instance-ids "+" ".join(image_instance_list), color))
+       print ('%s---' % prefix)
+       print ('%sUpdate image | refresh=true terminal=true bash="%s" param1="%s" param2="%s" color=%s' % (prefix, sys.argv[0], "update_image", current_image_id, color))
        print ('%s---' % prefix)
        if len(images) > 1:
           print ('%sDestroy image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " && /usr/local/bin/aws ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
