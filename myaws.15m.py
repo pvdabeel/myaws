@@ -57,7 +57,8 @@ aws_default_vmtype = 'c5.4xlarge'
 
 # Command to be called inside instance to update it
 
-update_cmd = 'update' 
+cmd_update  = 'update' 
+cmd_rebuild = 'fullupdate' 
 
 # aws ec2 describe-images --owners 615416975922 --query 'Images[*].{ID:ImageId}'
 # aws ec2 run-instances --image-id ami-089fc69c2ca496809 --count 1 --instance-type t2.micro --key-name gentoo --security-group-ids sg-bce547d1
@@ -197,7 +198,7 @@ def update_pricing():
 
 
 # The update-image function: Update an EC2 image
-def update_image():
+def update_image(cmd=cmd_update):
     if (len(sys.argv) != 3): 
         print ('Please provide an ami name as argument')
         return
@@ -240,7 +241,7 @@ def update_image():
     # execute update
     print ('--- Updating instance:')
     try:
-        subprocess.call("ssh -q -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"bash -icl "+update_cmd+"\"", shell=True)
+        subprocess.call("ssh -q -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"bash -icl "+cmd+"\"", shell=True)
     except:
         print (CRED+'!!! Failed to update instance'+CEND)
         # Destroy instance
@@ -285,9 +286,14 @@ def main(argv):
 
     # CASE 1c: update-image was called
     if 'update_image' in argv:
-       update_image()
+       update_image(cmd_update)
        return
-  
+ 
+    # CASE 1d: 
+    if 'rebuild_image' in argv:
+       update_image(cmd_rebuild)
+       return
+
 
     # CASE 2: nor init nor update were called, AWS not available
     if DARK_MODE:
@@ -429,6 +435,7 @@ def main(argv):
        print ('%s---' % prefix)
        print ('%sImage' % prefix) 
        print ('%s--Update | refresh=true terminal=true bash="%s" param1="%s" param2="%s" color=%s' % (prefix, sys.argv[0], "update_image", current_image_id, color))
+       print ('%s--Rebuild | refresh=true terminal=true bash="%s" param1="%s" param2="%s" color=%s' % (prefix, sys.argv[0], "rebuild_image", current_image_id, color))
 
        if (len(images) > 1):
           print ('%s--Destroy | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " && /usr/local/bin/aws ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
