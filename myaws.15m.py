@@ -27,7 +27,7 @@ aws_region   = 'eu-central-1'
 aws_ostype   = 'Linux' 
 
 vm_cheap     = 0.25
-vm_expensive = 0.9
+vm_expensive = 1.0 
 
 aws_vmtypes  = [('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
                          ('.small',   '(   1 vcpu, 2Gb vram )\t'),
