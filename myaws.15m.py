@@ -68,7 +68,7 @@ aws_vmtypes  = [('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
 
 # z1d not available in eu-central-1 yet
 
-aws_default_vmtype = 'c5.4xlarge'
+aws_default_vmtype = 'c5d.4xlarge'
 
 # Command to be called inside instance to update it
 
@@ -425,7 +425,7 @@ def main(argv):
               uptime_h = divmod(uptime_d[1], 3600)
               uptime_m = divmod(uptime_h[1], 60)
 
-              print ('%s%s\t\t%sd:%sh%sm \t\t%s\t\tip: %s ' % (prefix, color_state(state), int(uptime_d[0]),int(uptime_h[0]),int(uptime_m[0]), justify(vmtype,10), ipaddress ))
+              print ('%s%s\t%sd:%sh%sm \t%s\tip: %s ' % (prefix, color_state(state), int(uptime_d[0]),int(uptime_h[0]),int(uptime_m[0]), justify(vmtype,10), ipaddress ))
 
               if state == 'running': 
                 print ('%s--Connect | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
