@@ -241,12 +241,18 @@ def update_image(cmd=cmd_update):
     # execute update
     print ('--- Updating instance:')
     try:
-        subprocess.call("ssh -q -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"bash -icl "+cmd+"\"", shell=True)
+        updateoutcome = subprocess.call("ssh -q -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"bash -icl "+cmd+"\"", shell=True)
     except:
         print (CRED+'!!! Failed to update instance'+CEND)
         # Destroy instance
         json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
         return
+
+    if (not(updateoutcome)):
+        print (CRED+'!!! Failed to update instance'+CEND)
+        json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
+        return
+
 
     # create new image
     print ('--- Creating new image:    '),
