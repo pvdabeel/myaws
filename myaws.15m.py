@@ -68,7 +68,8 @@ aws_vmtypes  = [('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
 
 # z1d not available in eu-central-1 yet
 
-aws_default_vmtype = 'c5d.4xlarge'
+aws_default_vmtype_update  = 'c5d.4xlarge'
+aws_default_vmtype_rebuild = 'c5d.9xlarge'
 
 # Command to be called inside instance to update it
 
@@ -223,7 +224,11 @@ def update_image(cmd=cmd_update):
     ami_to_update = sys.argv[2]
    
     print ('>>> Updating image:         '+CGREEN+ami_to_update+CEND)
-    
+    if (cmd == cmd_update): 
+        aws_default_vmtype = aws_default_vmtype_update
+    else:
+        aws_default_vmtype = aws_default_vmtype_rebuild
+
     # for the given AMI image, spawn an instance
     print ('--- Deploying instance:     '+CGREEN+aws_default_vmtype+CEND)
     try: 
@@ -291,7 +296,7 @@ def update_image(cmd=cmd_update):
         print (CRED+'!!! Instance cleanup failed'+CEND)
 
 
-    print ('>>> Updated image created')
+    print ('>>> New image created')
     return
 
 
