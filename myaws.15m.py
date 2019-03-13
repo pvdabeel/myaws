@@ -248,7 +248,7 @@ def update_image(cmd=cmd_update):
         json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
         return
 
-    if (not(updateoutcome)):
+    if (updateoutcome):
         print (CRED+'!!! Failed to update instance'+CEND)
         json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
         return
