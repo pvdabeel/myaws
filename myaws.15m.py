@@ -59,12 +59,14 @@ aws_vmtypes  = [('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
                          ('.18xlarge','(  72 vcpu, 144Gb vram )\t') ]),
                 ('x1', [ ('.16xlarge','(  64 vcpu, 976Gb vram )\t'),
                          ('.32xlarge','( 128 vcpu, 1952Gb vram )')  ]), 
-                ('z1d',[ ('.2xlarge', '(   8 vcpu, 64Gb vram )\t'),
-                         ('.3xlarge', '(  12 vcpu, 96Gb vram )\t'), 
-                         ('.6xlarge', '(  24 vcpu, 192Gb vram )\t'), 
-                         ('.12xlarge','(  48 vcpu, 384Gb vram )\t'), 
-                         ('.metal',   '(  48 vcpu, 384Gb vram )\t')  ]), 
+#               ('z1d',[ ('.2xlarge', '(   8 vcpu, 64Gb vram )\t'),
+#                        ('.3xlarge', '(  12 vcpu, 96Gb vram )\t'), 
+#                        ('.6xlarge', '(  24 vcpu, 192Gb vram )\t'), 
+#                        ('.12xlarge','(  48 vcpu, 384Gb vram )\t'), 
+#                        ('.metal',   '(  48 vcpu, 384Gb vram )\t')  ]), 
                 ('i3', [ ('.metal',   '(  72 core, 512Gb ram )\t') ]) ] 
+
+# z1d not available in eu-central-1 yet
 
 aws_default_vmtype = 'c5.4xlarge'
 
