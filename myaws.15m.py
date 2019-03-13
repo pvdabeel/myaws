@@ -29,29 +29,42 @@ aws_ostype   = 'Linux'
 vm_cheap     = 0.25
 vm_expensive = 0.9
 
-aws_vmtypes  = [('t2',[ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
-                        ('.small',   '(   1 vcpu, 2Gb vram )\t'),
-                        ('.medium',  '(   2 vcpu, 4Gb vram )\t'),
-                        ('.large',   '(   2 vcpu, 8Gb vram )\t'), 
-                        ('.xlarge',  '(   4 vcpu, 16Gb vram )\t'), 
-                        ('.2xlarge', '(   8 vcpu, 32Gb vram )\t')  ]),
-                ('t3',[ ('.micro',   '(   2 vcpu, 1Gb vram )\t'), 
-                        ('.small',   '(   2 vcpu, 2Gb vram )\t'), 
-                        ('.medium',  '(   2 vcpu, 4Gb vram )\t'), 
-                        ('.large',   '(   2 vcpu, 8Gb vram )\t'), 
-                        ('.xlarge',  '(   4 vcpu, 16Gb vram )\t'), 
-                        ('.2xlarge', '(   8 vcpu, 32Gb vram )\t')  ]), 
-                ('m4',[ ('.4xlarge', '(  16 vcpu, 64Gb vram )\t'), 
-                        ('.16xlarge','(  64 vcpu, 256Gb vram )\t') ]), 
-                ('m5',[ ('.4xlarge', '(  16 vcpu, 64Gb vram )\t'), 
-                        ('.12xlarge','(  48 vcpu, 192Gb vram )\t'), 
-                        ('.24xlarge','(  96 vcpu, 384Gb vram )\t') ]), 
-                ('c5',[ ('.4xlarge', '(  16 vcpu, 32Gb vram )\t'), 
-                        ('.9xlarge', '(  36 vcpu, 72Gb vram )\t'), 
-                        ('.18xlarge','(  72 vcpu, 144Gb vram )\t') ]),
-                ('x1',[ ('.16xlarge','(  64 vcpu, 976Gb vram )\t'),
-                        ('.32xlarge','( 128 vcpu, 1952Gb vram )')  ]), 
-                ('i3',[ ('.metal',   '(  72 core, 512Gb ram )\t') ]) ] 
+aws_vmtypes  = [('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
+                         ('.small',   '(   1 vcpu, 2Gb vram )\t'),
+                         ('.medium',  '(   2 vcpu, 4Gb vram )\t'),
+                         ('.large',   '(   2 vcpu, 8Gb vram )\t'), 
+                         ('.xlarge',  '(   4 vcpu, 16Gb vram )\t'), 
+                         ('.2xlarge', '(   8 vcpu, 32Gb vram )\t')  ]),
+                ('t3', [ ('.micro',   '(   2 vcpu, 1Gb vram )\t'), 
+                         ('.small',   '(   2 vcpu, 2Gb vram )\t'), 
+                         ('.medium',  '(   2 vcpu, 4Gb vram )\t'), 
+                         ('.large',   '(   2 vcpu, 8Gb vram )\t'), 
+                         ('.xlarge',  '(   4 vcpu, 16Gb vram )\t'), 
+                         ('.2xlarge', '(   8 vcpu, 32Gb vram )\t')  ]), 
+                ('m4', [ ('.4xlarge', '(  16 vcpu, 64Gb vram )\t'), 
+                         ('.16xlarge','(  64 vcpu, 256Gb vram )\t') ]), 
+                ('m5', [ ('.4xlarge', '(  16 vcpu, 64Gb vram )\t'), 
+                         ('.12xlarge','(  48 vcpu, 192Gb vram )\t'), 
+                         ('.24xlarge','(  96 vcpu, 384Gb vram )\t'),
+                         ('.metal',   '(  96 vcpu, 384Gb vram )\t') ]), 
+                ('m5d',[ ('.4xlarge', '(  16 vcpu, 64Gb vram )\t'), 
+                         ('.12xlarge','(  48 vcpu, 192Gb vram )\t'), 
+                         ('.24xlarge','(  96 vcpu, 384Gb vram )\t'), 
+                         ('.metal',   '(  96 vcpu, 384Gb vram )\t') ]), 
+                ('c5', [ ('.4xlarge', '(  16 vcpu, 32Gb vram )\t'), 
+                         ('.9xlarge', '(  36 vcpu, 72Gb vram )\t'), 
+                         ('.18xlarge','(  72 vcpu, 144Gb vram )\t') ]),
+                ('c5d',[ ('.4xlarge', '(  16 vcpu, 32Gb vram )\t'), 
+                         ('.9xlarge', '(  36 vcpu, 72Gb vram )\t'), 
+                         ('.18xlarge','(  72 vcpu, 144Gb vram )\t') ]),
+                ('x1', [ ('.16xlarge','(  64 vcpu, 976Gb vram )\t'),
+                         ('.32xlarge','( 128 vcpu, 1952Gb vram )')  ]), 
+                ('z1d',[ ('.2xlarge', '(   8 vcpu, 64Gb vram )\t'),
+                         ('.3xlarge', '(  12 vcpu, 96Gb vram )\t'), 
+                         ('.6xlarge', '(  24 vcpu, 192Gb vram )\t'), 
+                         ('.12xlarge','(  48 vcpu, 384Gb vram )\t'), 
+                         ('.metal',   '(  48 vcpu, 384Gb vram )\t')  ]), 
+                ('i3', [ ('.metal',   '(  72 core, 512Gb ram )\t') ]) ] 
 
 aws_default_vmtype = 'c5.4xlarge'
 
@@ -164,7 +177,10 @@ def justify(string):
     return justify(string,10)
 
 def justify(string,number):
-    return string.ljust(number)
+    length = len(string)
+    quot   = (number - length ) // 4
+    rem    = (number - length )  % 4
+    return string.ljust(length+rem,' ').ljust(length+rem+quot,'\t')
 
 def important(string):
     return CRED + string + CEND
@@ -373,7 +389,7 @@ def main(argv):
                 aws_pricing = database.search(Q.type==aws_vmgroup+aws_vmtype)[0]['pricing']
              except: 
                 aws_pricing = 0
-             print ('%s--%s%s\t\t%s\t\t%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_vmgroup, justify(aws_vmtype,9), justify(aws_vmdesc,20), color_cost(aws_pricing,'Hourly','USD'), aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type "+aws_vmgroup+aws_vmtype+" --key-name "+aws_key_name+" --security-group-ids "+aws_security, color))
+             print ('%s--%s\t%s\t%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, justify(aws_vmgroup+aws_vmtype,14), justify(aws_vmdesc,18), color_cost(aws_pricing,'Hourly','USD'), aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type "+aws_vmgroup+aws_vmtype+" --key-name "+aws_key_name+" --security-group-ids "+aws_security, color))
           print ('%s-----' % prefix)
        if aws_pricing == 0:
           print ('%s--%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, important('Update AWS pricing'),sys.argv[0], "update_pricing", color))
@@ -458,7 +474,7 @@ def main(argv):
     totalcost = 0
     for group in monthly_cost['ResultsByTime'][0]['Groups']:
        totalcost += float(group['Metrics']['BlendedCost']['Amount'])
-    print ('Cost this month:		 %s | color=%s' % (color_cost(totalcost,'','USD'),color))
+    print ('Cost this month:\t\t   %s | color=%s' % (color_cost(totalcost,'','USD'),color))
     for group in monthly_cost['ResultsByTime'][0]['Groups']:
        if group['Keys'][0] == 'Tax':
           print('-----')
@@ -472,7 +488,7 @@ def main(argv):
     for day in daily_cost['ResultsByTime']:
        for group in day['Groups']:
           dailycost += float(group['Metrics']['BlendedCost']['Amount'])
-       print ('----%s : %s | color=%s' % (day['TimePeriod']['Start'],color_cost(dailycost,'','USD'),color))
+       print ('----%s : \t%s | color=%s' % (day['TimePeriod']['Start'],color_cost(dailycost,'','USD'),color))
        for group in day['Groups']:
           if group['Keys'][0] == 'Tax':
              print('---------')
