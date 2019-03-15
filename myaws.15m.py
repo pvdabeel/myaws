@@ -380,7 +380,7 @@ def main(argv):
            print ('%sImage :\t\t\t\t %s | color=%s' % (prefix, image['Name'], color))
            prefix = '--'
        else:
-           print ('%sImage : %s | color=%s' % (prefix, image['Name'], info_color))
+           print ('%sImage :\t\t\t\t %s | color=%s' % (prefix, image['Name'], info_color))
            continue
 
 
