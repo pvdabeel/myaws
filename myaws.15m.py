@@ -377,7 +377,7 @@ def main(argv):
  
        # create a submenu for every AMI which whose underlying storage is ready
        if (current_image_snapshot_id):
-           print ('%sImage : %s | color=%s' % (prefix, image['Name'], color))
+           print ('%sImage :\t\t\t\t %s | color=%s' % (prefix, image['Name'], color))
            prefix = '--'
        else:
            print ('%sImage : %s | color=%s' % (prefix, image['Name'], info_color))
@@ -481,7 +481,7 @@ def main(argv):
     totalcost = 0
     for group in monthly_cost['ResultsByTime'][0]['Groups']:
        totalcost += float(group['Metrics']['BlendedCost']['Amount'])
-    print ('Cost this month:\t\t   %s | color=%s' % (color_cost(totalcost,'','USD'),color))
+    print ('Cost this month:\t\t\t\t\t   %s | color=%s' % (color_cost(totalcost,'','USD'),color))
     for group in monthly_cost['ResultsByTime'][0]['Groups']:
        if group['Keys'][0] == 'Tax':
           print('-----')
