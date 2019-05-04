@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env PYTHONIOENCODING=UTF-8 /usr/bin/python
 # -*- coding: utf-8 -*-
 #
 # <bitbar.title>MyAWS</bitbar.title>
@@ -28,6 +28,9 @@ aws_ostype   = 'Linux'
 
 vm_cheap     = 0.25
 vm_expensive = 1.0 
+
+preferred_currency = 'EUR' # or 'USD' (or any currency supported by currencyconvertor)
+
 
 aws_vmtypes  = [('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
                          ('.small',   '(   1 vcpu, 2Gb vram )\t'),
@@ -102,6 +105,8 @@ import six
 
 from datetime import date
 from tinydb import TinyDB, Query
+from currency_converter import CurrencyConverter
+
 
 from os.path import expanduser
 
@@ -114,6 +119,9 @@ if not os.path.exists(state_dir):
 
 # Tiny DB to store pricing
 database = TinyDB(state_dir+'/myawspricing.json')
+
+# Cost convertor
+converter = CurrencyConverter()
 
 # Nice ANSI colors
 CEND    = '\33[0m'
@@ -150,8 +158,14 @@ def color_state(state):
     else:
         return state
 
-def color_cost(cost,desc,rate):
-    short_rate = '$'
+def color_cost(unconverted_cost,desc,rate):
+    cost = converter.convert(unconverted_cost,rate,preferred_currency) 
+    if preferred_currency == 'USD': 
+        short_rate = '$'
+    elif preferred_currency == 'EUR':
+        short_rate = u"€" 
+    else:
+        short_rate = '$'
     if desc == 'Tax':
        return CRED + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + '\t ' + CEND + ' - ' + desc
     elif desc == 'Total': 
@@ -342,6 +356,9 @@ def main(argv):
 
         images       = json.loads(subprocess.check_output(aws_command+" ec2 describe-images --owners "+aws_owner_id+" --query 'Images[*].{ImageId:ImageId,Name:Name,SnapshotId:BlockDeviceMappings[0].Ebs.SnapshotId}'", shell=True))
         instances    = json.loads(subprocess.check_output(aws_command+" ec2 describe-instances --query 'Reservations[*].Instances[*].{PublicDnsName:PublicDnsName,State:State,InstanceType:InstanceType,PublicIpAddress:PublicIpAddress,InstanceId:InstanceId,ImageId:ImageId,LaunchTime:LaunchTime}'", shell=True))
+        volumes      = json.loads(subprocess.check_output(aws_command+" ec2 describe-volumes --query 'Volumes[*].{Size:Size}'", shell=True))
+        snapshots    = json.loads(subprocess.check_output(aws_command+" ec2 describe-snapshots --owner-ids "+aws_owner_id+" --query 'Snapshots[*].{Size:VolumeSize}'", shell=True))
+
         try:
             with open(state_dir+'/myaws-costs-monthly'+todayDate.strftime("%Y%m%d")+'.json') as json_file:
                 monthly_cost = json.load(json_file)
@@ -369,6 +386,10 @@ def main(argv):
     app_print_logo()
     prefix = '' 
    
+    # -------------------
+    # image menu
+    # -------------------
+
     # loop through images, list all instances and print menu for creating new vm from image
     for image in images: 
 
@@ -474,14 +495,39 @@ def main(argv):
        prefix = ''
 
 
+    # -------------------
+    # storage menu
+    # -------------------
+
+    print ('---')
+    
+    my_volumes = 0
+    my_volumes_consumption = 0
+
+    my_snapshots = 0
+    my_snapshots_consumption = 0
+
+    for volume in volumes: 
+        my_volumes += 1
+        my_volumes_consumption += volume['Size']
+    
+    for snapshot in snapshots:
+        my_snapshots +=1 
+        my_snapshots_consumption += snapshot['Size']
+
+    print ('Volumes:\t\t\t %s objects, %s Gb total | color=%s' % (my_volumes, my_volumes_consumption, info_color))
+    print ('Snapshots:\t\t\t %s objects, %s Gb total | color=%s' % (my_snapshots, my_snapshots_consumption, info_color))
+
+    # -------------------
     # cost and usage menu
+    # -------------------
 
     # monthly 
     print ('---')
     totalcost = 0
     for group in monthly_cost['ResultsByTime'][0]['Groups']:
        totalcost += float(group['Metrics']['BlendedCost']['Amount'])
-    print ('Cost this month:\t\t\t\t\t   %s | color=%s' % (color_cost(totalcost,'','USD'),color))
+    print ('Cost this month:\t\t %s | color=%s' % (color_cost(totalcost,'','USD'),color))
     for group in monthly_cost['ResultsByTime'][0]['Groups']:
        if group['Keys'][0] == 'Tax':
           print('-----')
