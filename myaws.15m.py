@@ -220,12 +220,13 @@ def update_pricing():
              # DB format change (bug in awspricing) aws_pricing = ec2_offer.ondemand_hourly(aws_vmgroup+aws_vmtype,operating_system=aws_ostype,region=aws_region)
              # Ondemand makes a distinction between Used, ReservationBox, ...
              sku = ec2_offer.search_skus(instance_type=aws_vmgroup+aws_vmtype,operating_system=aws_ostype,tenancy='Shared',location='EU (Frankfurt)',licenseModel='No License required', preInstalledSw='NA',capacitystatus='Used').pop()
-             print ec2_offer._offer_data['terms']['OnDemand'][sku]
+             print ec2_offer._offer_data[sku]['terms']['OnDemand']
              aws_pricing = next(six.itervalues(next(six.itervalues(ec2_offer._offer_data['terms']['OnDemand'][sku]))['priceDimensions']))['pricePerUnit']['USD']
              print aws_pricing
+             database.insert({'type':aws_vmgroup+aws_vmtype,'pricing':aws_pricing})
           except:
-             aws_pricing = 'n/a'
-          database.insert({'type':aws_vmgroup+aws_vmtype,'pricing':aws_pricing})
+             pass 
+             # aws_pricing = 'n/a'
     # Store timestamp
     database.insert({'timestamp':str(datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))})
 
