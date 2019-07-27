@@ -221,7 +221,7 @@ def update_pricing():
              # Ondemand makes a distinction between Used, ReservationBox, ...
              sku = ec2_offer.search_skus(instance_type=aws_vmgroup+aws_vmtype,operating_system=aws_ostype,tenancy='Shared',location='EU (Frankfurt)',licenseModel='No License required', preInstalledSw='NA',capacitystatus='Used').pop()
              print ec2_offer._offer_data[sku]['terms']['OnDemand']
-             aws_pricing = next(six.itervalues(next(six.itervalues(ec2_offer._offer_data['terms']['OnDemand'][sku]))['priceDimensions']))['pricePerUnit']['USD']
+             aws_pricing = next(six.itervalues(next(six.itervalues(ec2_offer._offer_data[sku]['terms']['OnDemand']))['priceDimensions']))['pricePerUnit']['USD']
              print aws_pricing
              database.insert({'type':aws_vmgroup+aws_vmtype,'pricing':aws_pricing})
           except:
