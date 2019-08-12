@@ -223,9 +223,10 @@ def update_pricing():
              print ec2_offer._offer_data['terms']['OnDemand'][sku]
              aws_pricing = next(six.itervalues(next(six.itervalues(ec2_offer._offer_data['terms']['OnDemand'][sku]))['priceDimensions']))['pricePerUnit']['USD']
              print aws_pricing
+             database.insert({'type':aws_vmgroup+aws_vmtype,'pricing':aws_pricing})
           except:
-             aws_pricing = 'n/a'
-          database.insert({'type':aws_vmgroup+aws_vmtype,'pricing':aws_pricing})
+             pass 
+             # aws_pricing = 'n/a'
     # Store timestamp
     database.insert({'timestamp':str(datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))})
 
