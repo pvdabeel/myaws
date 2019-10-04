@@ -80,7 +80,7 @@ cmd_update  = 'update'
 cmd_rebuild = 'fullupdate' 
 
 # aws ec2 describe-images --owners 615416975922 --query 'Images[*].{ID:ImageId}'
-# aws ec2 run-instances --image-id ami-089fc69c2ca496809 --count 1 --instance-type t2.micro --key-name gentoo --security-group-ids sg-bce547d1
+# aws ec2 run-instances --image-id ami-089fc69c2ca496809 --count 1 --ebs-optimized --instance-type t2.micro --key-name gentoo --security-group-ids sg-bce547d1
 # aws ec2 describe-instances --query 'Reservations[*].Instances[*].{ID:PublicDnsName,State:State}'
 # aws ec2 terminate-instances --instance-ids i-0de69865f64ebd6ad
 # aws ec2 stop-instances --instance-ids --force
@@ -247,7 +247,7 @@ def update_image(cmd=cmd_update):
     # for the given AMI image, spawn an instance
     print ('--- Deploying instance:     '+CGREEN+aws_default_vmtype+CEND)
     try: 
-        instance_id = json.loads(subprocess.check_output(aws_command+" ec2 run-instances --image-id "+ami_to_update+" --instance-type "+aws_default_vmtype+" --key-name "+aws_key_name+" --security-group-ids "+aws_security, shell=True))['Instances'][0]['InstanceId']
+        instance_id = json.loads(subprocess.check_output(aws_command+" ec2 run-instances --image-id "+ami_to_update+" --instance-type "+aws_default_vmtype+" --ebs-optimized --key-name "+aws_key_name+" --security-group-ids "+aws_security, shell=True))['Instances'][0]['InstanceId']
     except: 
         print (CRED+'!!! Failed to deploy instance'+CEND) 
         return
@@ -279,7 +279,7 @@ def update_image(cmd=cmd_update):
     # execute update
     print ('--- Updating instance:')
     try:
-        updateoutcome = subprocess.call("ssh -q -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"bash -icl "+cmd+"\"", shell=True)
+        updateoutcome = subprocess.call("sleep 60 && ssh -q -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"bash -icl "+cmd+"\"", shell=True)
     except:
         print (CRED+'!!! Failed to update instance'+CEND)
         # Destroy instance
@@ -418,7 +418,7 @@ def main(argv):
                 aws_pricing = database.search(Q.type==aws_vmgroup+aws_vmtype)[0]['pricing']
              except: 
                 aws_pricing = 0
-             print ('%s--%s\t%s\t%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, justify(aws_vmgroup+aws_vmtype,14), justify(aws_vmdesc,18), color_cost(aws_pricing,'Hourly','USD'), aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type "+aws_vmgroup+aws_vmtype+" --key-name "+aws_key_name+" --security-group-ids "+aws_security, color))
+             print ('%s--%s\t%s\t%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, justify(aws_vmgroup+aws_vmtype,14), justify(aws_vmdesc,18), color_cost(aws_pricing,'Hourly','USD'), aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type "+aws_vmgroup+aws_vmtype+" --ebs-optimized --key-name "+aws_key_name+" --security-group-ids "+aws_security, color))
           print ('%s-----' % prefix)
        if aws_pricing == 0:
           print ('%s--%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, important('Update AWS pricing'),sys.argv[0], "update_pricing", color))
