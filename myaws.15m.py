@@ -72,7 +72,7 @@ aws_vmtypes  = [('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
 # z1d not available in eu-central-1 yet
 
 aws_default_vmtype_update  = 'c5d.4xlarge'
-aws_default_vmtype_rebuild = 'c5d.9xlarge'
+aws_default_vmtype_rebuild = 'c5d.18xlarge'
 
 # Command to be called inside instance to update it
 
@@ -473,7 +473,7 @@ def main(argv):
                     print ('%s----|Unable to get a screenshot | color=%s' % (prefix, color))
               if state != 'terminated':
                  print ('%s-----' % (prefix))
-                 print ('%s--Serial Console Log| refresh=true terminal = true bash="%s" param1="%s" color=%s' % (prefix, "cat", state_dir+"/myaws-"+current_instance_id+".console.log", color))
+                 print ('%s--Serial Console Log| refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "cat", state_dir+"/myaws-"+current_instance_id+".console.log", color))
                  with open(state_dir+"/myaws-"+current_instance_id+".console.log",'w') as console_file:
                     serial  = str(subprocess.check_output("/usr/local/bin/aws ec2 get-console-output --output text --instance-id "+current_instance_id, shell=True))
                     console_file.write(serial)
