@@ -71,14 +71,13 @@ aws_vmtypes  = [('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
                 ('x1e',[ ('.16xlarge','(  64 vcpu, 1952Gb vram )'),
                          ('.32xlarge','( 128 vcpu, 3904Gb vram )')  ]), 
                 ('u-6tb1',[('.metal',  '( 448 vcpu, 6144Gb vram )')  ]), 
-#               ('z1d',[ ('.2xlarge', '(   8 vcpu, 64Gb vram )\t'),
-#                        ('.3xlarge', '(  12 vcpu, 96Gb vram )\t'), 
-#                        ('.6xlarge', '(  24 vcpu, 192Gb vram )\t'), 
-#                        ('.12xlarge','(  48 vcpu, 384Gb vram )\t'), 
-#                        ('.metal',   '(  48 vcpu, 384Gb vram )\t')  ]), 
+                ('z1d',[ ('.2xlarge', '(   8 vcpu, 64Gb vram )\t'),
+                         ('.3xlarge', '(  12 vcpu, 96Gb vram )\t'), 
+                         ('.6xlarge', '(  24 vcpu, 192Gb vram )\t'), 
+                         ('.12xlarge','(  48 vcpu, 384Gb vram )\t'), 
+                         ('.metal',   '(  48 vcpu, 384Gb vram )\t')  ]), 
                 ('i3', [ ('.metal',   '(  72 core, 512Gb ram )\t') ]) ] 
 
-# z1d not available in eu-central-1 yet
 
 aws_default_vmtype_update  = 'c5d.4xlarge'
 aws_default_vmtype_rebuild = 'c5d.18xlarge'
@@ -418,25 +417,29 @@ def main(argv):
        # print menu with relevant info and actions
        print ('%sDeploy new Virtual Machine | color=%s' % (prefix, color))
 
-       aws_pricing = 1
+       aws_pricing = 'n/a'
        
        for (aws_vmgroup,aws_vmtypelist) in aws_vmtypes:
           for (aws_vmtype,aws_vmdesc) in aws_vmtypelist:
              Q = Query()
              try: 
                 aws_pricing = database.search(Q.type==aws_vmgroup+aws_vmtype)[0]['pricing']
-             except: 
+             except:
                 aws_pricing = 'n/a'
+                pass 
              print ('%s--%s\t%s\t%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, justify(aws_vmgroup+aws_vmtype,14), justify(aws_vmdesc,18), color_cost(aws_pricing,'Hourly','USD'), aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type "+aws_vmgroup+aws_vmtype+" --ebs-optimized --key-name "+aws_key_name+" --security-group-ids "+aws_security, color))
           print ('%s-----' % prefix)
-       if aws_pricing == 0:
+
+
+       db_last_updated = False
+
+       try:
+          db_last_updated = database.search(Q.timestamp)[0]['timestamp']
+          print ('%s--Last updated:\t%s | color=%s' % (prefix, db_last_updated, color))
+          print ('%s----%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, 'Update AWS pricing',sys.argv[0], "update_pricing", color))
+       except: 
           print ('%s--%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, important('Update AWS pricing'),sys.argv[0], "update_pricing", color))
 
-       else:
-          print ('%s--Last updated:\t%s | color=%s' % (prefix, database.search(Q.timestamp)[0]['timestamp'], color))
-          print ('%s----%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, 'Update AWS pricing',sys.argv[0], "update_pricing", color))
-    
-          
        print ('%s---' % prefix)
 
 
