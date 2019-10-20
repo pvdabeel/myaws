@@ -168,20 +168,20 @@ def color_state(state):
         return state
 
 def color_cost(unconverted_cost,desc,rate):
-    cost = converter.convert(unconverted_cost,rate,preferred_currency) 
     if preferred_currency == 'USD': 
         short_rate = '$'
     elif preferred_currency == 'EUR':
         short_rate = u"€" 
     else:
         short_rate = '$'
+    if unconverted_cost == 'n/a':
+       return CBLUE + '           n/a ' + CEND + '  per hour'
+    cost = converter.convert(unconverted_cost,rate,preferred_currency) 
     if desc == 'Tax':
        return CRED + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + '\t ' + CEND + ' - ' + desc
     elif desc == 'Total': 
        return CGREEN + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + '\t ' + CEND + ' - ' + desc
     elif desc == 'Hourly':
-       if cost == 'n/a':
-          return CGRAY + short_rate + ' ' + justify(cost,11) + ' ' + CEND + ' per hour'
        if (float(cost) < vm_cheap):
           return CGREEN + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + ' ' + CEND + ' per hour'
        if (float(cost) >= vm_cheap) and (float(cost) <= vm_expensive):
@@ -232,10 +232,10 @@ def update_pricing():
              print ec2_offer._offer_data[sku]['terms']['OnDemand']
              aws_pricing = next(six.itervalues(next(six.itervalues(ec2_offer._offer_data[sku]['terms']['OnDemand']))['priceDimensions']))['pricePerUnit']['USD']
              print aws_pricing
-             database.insert({'type':aws_vmgroup+aws_vmtype,'pricing':aws_pricing})
           except:
+             aws_pricing = 'n/a'
              pass 
-             # aws_pricing = 'n/a'
+          database.insert({'type':aws_vmgroup+aws_vmtype,'pricing':aws_pricing})
     # Store timestamp
     database.insert({'timestamp':str(datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))})
 
@@ -426,7 +426,7 @@ def main(argv):
              try: 
                 aws_pricing = database.search(Q.type==aws_vmgroup+aws_vmtype)[0]['pricing']
              except: 
-                aws_pricing = 0
+                aws_pricing = 'n/a'
              print ('%s--%s\t%s\t%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, justify(aws_vmgroup+aws_vmtype,14), justify(aws_vmdesc,18), color_cost(aws_pricing,'Hourly','USD'), aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type "+aws_vmgroup+aws_vmtype+" --ebs-optimized --key-name "+aws_key_name+" --security-group-ids "+aws_security, color))
           print ('%s-----' % prefix)
        if aws_pricing == 0:
