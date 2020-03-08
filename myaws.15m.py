@@ -404,7 +404,7 @@ def main(argv):
 
        current_image_id = image['ImageId']
        current_image_snapshot_id = image['SnapshotId']
- 
+
        # create a submenu for every AMI which whose underlying storage is ready
        if (current_image_snapshot_id):
            print ('%sImage :\t\t\t\t %s | color=%s' % (prefix, image['Name'], color))
@@ -458,7 +458,7 @@ def main(argv):
               dnsname = instance_json['PublicDnsName']
               vmtype = instance_json['InstanceType']
               ipaddress = instance_json['PublicIpAddress']
-              launchtime = datetime.datetime.strptime(instance_json['LaunchTime'],'%Y-%m-%dT%H:%M:%S.%fZ')
+              launchtime = datetime.datetime.strptime(instance_json['LaunchTime'][:19],'%Y-%m-%dT%H:%M:%S')
               uptime = datetime.datetime.utcnow() - launchtime
               uptime_d = divmod(uptime.total_seconds(),86400)
               uptime_h = divmod(uptime_d[1], 3600)
