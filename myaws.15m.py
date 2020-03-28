@@ -61,7 +61,9 @@ aws_vmtypes  = [('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
                          ('.metal',   '(  96 vcpu, 192Gb vram )\t') ]),
                 ('c5d',[ ('.4xlarge', '(  16 vcpu, 32Gb vram )\t'), 
                          ('.9xlarge', '(  36 vcpu, 72Gb vram )\t'), 
-                         ('.18xlarge','(  72 vcpu, 144Gb vram )\t') ]),
+                         ('.18xlarge','(  72 vcpu, 144Gb vram )\t'), 
+                         ('.24xlarge','(  96 vcpu, 192Gb vram )\t'),
+                         ('.metal',   '(  96 vcpu, 192Gb vram )\t') ]),
                 ('c5n',[ ('.4xlarge', '(  16 vcpu, 42Gb vram )\t'), 
                          ('.9xlarge', '(  36 vcpu, 96Gb vram )\t'), 
                          ('.18xlarge','(  72 vcpu, 192Gb vram )\t'),
@@ -80,7 +82,7 @@ aws_vmtypes  = [('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
 
 
 aws_default_vmtype_update  = 'c5d.4xlarge'
-aws_default_vmtype_rebuild = 'c5d.18xlarge'
+aws_default_vmtype_rebuild = 'c5d.24xlarge'
 
 # Command to be called inside instance to update it
 
