@@ -143,6 +143,12 @@ CGREEN  = '\33[32m'
 CYELLOW = '\33[33m'
 CBLUE   = '\33[34m'
 CGRAY   = '\33[30m'
+CDGRAY  = '\33[90m'
+
+# ANSI styles
+
+CBOLD   = '\033[01m'
+CNORMAL = '\033[00m'
 
 # Support for OS X Dark Mode
 DARK_MODE=os.getenv('BitBarDarkMode',0)
@@ -251,7 +257,9 @@ def update_image(cmd=cmd_update):
         return
     ami_to_update = sys.argv[2]
    
-    print ('>>> Updating image:         '+CGREEN+ami_to_update+CEND)
+    print
+    print (CYELLOW+CBOLD+'>>> Updating image:         '+CNORMAL+CGREEN+ami_to_update+CEND)
+    print
     if (cmd == cmd_update): 
         aws_default_vmtype = aws_default_vmtype_update
     else:
@@ -341,8 +349,9 @@ def update_image(cmd=cmd_update):
         print (CRED+'failed'+CEND)
         print (CRED+'!!! Image cleanup failed'+CEND)
 
-
-    print ('>>> New image created')
+    print
+    print (CYELLOW+CBOLD+'>>> New image created'+CNORMAL+CEND)
+    print
     return
 
 
