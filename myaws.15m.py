@@ -326,15 +326,6 @@ def update_image(cmd=cmd_update):
         print (CRED+'failed'+CEND)
         print (CRED+'!!! Failed to create image'+CEND)
 
-    # Cleanup instance
-    print ('--- Cleanup instance:      '),
-    try: 
-        json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
-        print (CGREEN+'ok'+CEND)
-    except:
-        print (CRED+'failed'+CEND)
-        print (CRED+'!!! Instance cleanup failed'+CEND)
-
     # wait until image is available 
     print ('--- Checking new image:    '),
     try:
@@ -344,6 +335,15 @@ def update_image(cmd=cmd_update):
         print (CRED+'failed'+CEND)
         print (CRED+'!!! Image failed to reach available state'+CEND)
         return
+
+    # Cleanup instance
+    print ('--- Cleanup instance:      '),
+    try: 
+        json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
+        print (CGREEN+'ok'+CEND)
+    except:
+        print (CRED+'failed'+CEND)
+        print (CRED+'!!! Instance cleanup failed'+CEND)
 
     # Cleanup old image 
     print ('--- Cleanup old image:     '),
