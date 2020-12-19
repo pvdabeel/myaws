@@ -23,7 +23,7 @@ Check your current EC2 spending
 
 ## Installation instructions: 
 
-1. Ensure you have [aws command line tools](https://docs.aws.amazon.com/cli/latest/userguide/cli-install-macos.html) installed
+1. Ensure you have [aws command line tools](https://docs.aws.amazon.com/cli/latest/userguide/cli-install-macos.html) installed (AWS CLI 1 or 2 are both fine)
 2. Execute 'sudo easy_install tinydb==3.9 awspricing currencyconverter' in Terminal.app
 3. Ensure you have [bitbar](https://github.com/matryer/bitbar/releases/latest) installed.
 4. Ensure your bitbar plugins directory does not have a space in the path (A known bitbar bug)
