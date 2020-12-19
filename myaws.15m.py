@@ -84,7 +84,7 @@ aws_vmtypes  = [('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
                 ('i3', [ ('.metal',   '(  72 core, 512Gb ram )\t') ]) ] 
 
 
-aws_default_vmtype_update  = 'c5d.4xlarge'
+aws_default_vmtype_update  = 'c5d.24xlarge'
 aws_default_vmtype_rebuild = 'c5d.24xlarge'
 
 # Command to be called inside instance to update it
@@ -471,7 +471,8 @@ def main(argv):
        db_last_updated = False
 
        try:
-          db_last_updated = database.search(Q.timestamp)[0]['timestamp']
+          Q = Query()
+          db_last_updated = database.search(Q.timestamp != 'null')[0]['timestamp']
           print ('%s--Last updated:\t%s | color=%s' % (prefix, db_last_updated, color))
           print ('%s----%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, 'Update AWS pricing',sys.argv[0], "update_pricing", color))
        except: 
