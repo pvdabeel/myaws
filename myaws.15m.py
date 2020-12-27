@@ -81,7 +81,8 @@ aws_vmtypes  = [('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
                          ('.6xlarge', '(  24 vcpu, 192Gb vram )\t'), 
                          ('.12xlarge','(  48 vcpu, 384Gb vram )\t'), 
                          ('.metal',   '(  48 vcpu, 384Gb vram )\t')  ]), 
-                ('i3', [ ('.metal',   '(  72 core, 512Gb ram )\t') ]) ] 
+                ('i3', [ ('.metal',   '(  72 core, 512Gb ram )\t') ]),
+                ('mac1',[('.metal',   '(  12 core, 32Gb ram )\t') ]) ]
 
 
 aws_default_vmtype_update  = 'c5d.24xlarge'
