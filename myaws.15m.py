@@ -32,12 +32,12 @@ vm_expensive = 1.0
 preferred_currency = 'EUR' # or 'USD' (or any currency supported by currencyconvertor)
 
 
-aws_vmtypes  = [('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
-                         ('.small',   '(   1 vcpu, 2Gb vram )\t'),
-                         ('.medium',  '(   2 vcpu, 4Gb vram )\t'),
-                         ('.large',   '(   2 vcpu, 8Gb vram )\t'), 
-                         ('.xlarge',  '(   4 vcpu, 16Gb vram )\t'), 
-                         ('.2xlarge', '(   8 vcpu, 32Gb vram )\t')  ]),
+aws_vmtypes  = [#('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
+                #         ('.small',   '(   1 vcpu, 2Gb vram )\t'),
+                #         ('.medium',  '(   2 vcpu, 4Gb vram )\t'),
+                #         ('.large',   '(   2 vcpu, 8Gb vram )\t'), 
+                #         ('.xlarge',  '(   4 vcpu, 16Gb vram )\t'), 
+                #         ('.2xlarge', '(   8 vcpu, 32Gb vram )\t')  ]),
                 ('t3', [ ('.micro',   '(   2 vcpu, 1Gb vram )\t'), 
                          ('.small',   '(   2 vcpu, 2Gb vram )\t'), 
                          ('.medium',  '(   2 vcpu, 4Gb vram )\t'), 
@@ -54,6 +54,13 @@ aws_vmtypes  = [('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
                          ('.12xlarge','(  48 vcpu, 192Gb vram )\t'), 
                          ('.24xlarge','(  96 vcpu, 384Gb vram )\t'), 
                          ('.metal',   '(  96 vcpu, 384Gb vram )\t') ]), 
+                ('m5zn',[('.large',   '(   2 vcpu, 8Gb vram )\t'), 
+                         ('.xlarge',  '(   4 vcpu, 16Gb vram )\t'), 
+                         ('.2xlarge', '(   8 vcpu, 32Gb vram )\t'), 
+                         ('.3xlarge', '(  12 vcpu, 48Gb vram )\t'), 
+                         ('.6xlarge', '(  24 vcpu, 96Gb vram )\t'), 
+                         ('.12xlarge','(  48 vcpu, 192Gb vram )\t'), 
+                         ('.metal',   '(  48 vcpu, 192Gb vram )\t') ]), 
                 ('c5', [ ('.4xlarge', '(  16 vcpu, 32Gb vram )\t'), 
                          ('.9xlarge', '(  36 vcpu, 72Gb vram )\t'), 
                          ('.18xlarge','(  72 vcpu, 144Gb vram )\t'), 
@@ -85,8 +92,8 @@ aws_vmtypes  = [('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
                 ('mac1',[('.metal',   '(  12 core, 32Gb ram )\t') ]) ]
 
 
-aws_default_vmtype_update  = 'c5d.24xlarge'
-aws_default_vmtype_rebuild = 'c5d.24xlarge'
+aws_default_vmtype_update  = 'm5zn.6xxlarge'
+aws_default_vmtype_rebuild = 'm5zn.12xlarge'
 
 # Command to be called inside instance to update it
 
