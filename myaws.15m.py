@@ -92,7 +92,7 @@ aws_vmtypes  = [#('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
                 ('mac1',[('.metal',   '(  12 core, 32Gb ram )\t') ]) ]
 
 
-aws_default_vmtype_update  = 'm5zn.6xxlarge'
+aws_default_vmtype_update  = 'm5zn.6xlarge'
 aws_default_vmtype_rebuild = 'm5zn.12xlarge'
 
 # Command to be called inside instance to update it
