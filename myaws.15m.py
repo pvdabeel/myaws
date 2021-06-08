@@ -19,6 +19,10 @@
 # Copy this file to your bitbar plugins folder and chmod +x the file from your terminal in that folder
 # Run bitbar
 
+import warnings
+
+warnings.filterwarnings("ignore")
+
 aws_owner_id = '615416975922'
 aws_key_name = 'gentoo'
 aws_security = 'sg-bce547d1'
