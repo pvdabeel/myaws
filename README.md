@@ -29,4 +29,4 @@ Check your current EC2 spending
 4. Ensure your bitbar plugins directory does not have a space in the path (A known bitbar bug)
 5. Copy [myaws.15m.py](myaws.15m.py) to your bitbar plugins folder and chmod +x the file from your terminal in that folder
 6. Run 'myaws.15m.py update' in Terminal.app to retrieve latest pricing
-7. Run bitbar
+7. Run bitbar (version 1.9 or <2.0-beta9, xbar not yet supported)
