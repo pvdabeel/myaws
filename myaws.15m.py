@@ -1,12 +1,12 @@
 #!/usr/bin/env PYTHONIOENCODING=UTF-8 /usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# <bitbar.title>MyAWS</bitbar.title>
-# <bitbar.version>v3.0</bitbar.version>
-# <bitbar.author>pvdabeel@mac.com</bitbar.author>
-# <bitbar.author.github>pvdabeel</bitbar.author.github>
-# <bitbar.desc>Create, connect to and terminate Amazon EC2 virtual machines from the OS X menubar</bitbar.desc>
-# <bitbar.dependencies>python</bitbar.dependencies>
+# <xbar.title>MyAWS</xbar.title>
+# <xbar.version>v4.0</xbar.version>
+# <xbar.author>pvdabeel@mac.com</xbar.author>
+# <xbar.author.github>pvdabeel</xbar.author.github>
+# <xbar.desc>Create, connect to and terminate Amazon EC2 virtual machines from the OS X menubar</xbar.desc>
+# <xbar.dependencies>python</xbar.dependencies>
 #
 # Licence: GPL v3
 
@@ -14,17 +14,16 @@
 # -------------------------- 
 # Ensure you have the Amazon EC2 CLI installed (see Readme for link)
 # Run 'sudo easy_install tinydb awspricing' in Terminal.app
-# Ensure you have bitbar installed https://github.com/matryer/bitbar/releases/latest
-# Ensure your bitbar plugins directory does not have a space in the path (known bitbar bug)
-# Copy this file to your bitbar plugins folder and chmod +x the file from your terminal in that folder
-# Run bitbar
+# Ensure you have xbar installed https://github.com/matryer/xbar-plugins
+# Copy this file to your xbar plugins folder and chmod +x the file from your terminal in that folder
+# Run xbar
 
 import warnings
 
 warnings.filterwarnings("ignore")
 
 aws_owner_id = '615416975922'
-aws_key_name = 'gentoo'
+aws_key_name = 'pvdabeel@mac.com'
 aws_security = 'sg-bce547d1'
 aws_command  = '/usr/local/bin/aws'
 aws_region   = 'eu-central-1'
@@ -142,6 +141,10 @@ state_dir    = home+'/.state/myaws'
 if not os.path.exists(state_dir):                                               
     os.makedirs(state_dir)    
 
+# The full path to this file
+
+cmd_path = os.path.realpath(__file__)
+
 # Tiny DB to store pricing
 database = TinyDB(state_dir+'/myawspricing.json')
 
@@ -154,8 +157,8 @@ CRED    = '\33[31m'
 CGREEN  = '\33[32m'
 CYELLOW = '\33[33m'
 CBLUE   = '\33[34m'
-CGRAY   = '\33[30m'
-CDGRAY  = '\33[90m'
+CGRAY   = '\33[37m'
+CDGRAY  = '\33[37m'
 
 # ANSI styles
 
@@ -163,7 +166,7 @@ CBOLD   = '\033[01m'
 CNORMAL = '\033[00m'
 
 # Support for OS X Dark Mode
-DARK_MODE=os.getenv('BitBarDarkMode',0)
+DARK_MODE=os.getenv('XBARDarkMode',0)
 
 
 # Logo for both dark mode and regular mode
@@ -175,17 +178,17 @@ def app_print_logo():
 # Pretty printing
 def color_state(state):
     if state == 'running':
-        return CGREEN + justify(state,10) + CEND
+        return CGREEN + justify(state,14) + CEND
     if state == 'stopped':
-        return CRED + justify(state,10) + CEND
+        return CRED + justify(state,14) + CEND
     if state == 'pending':
-        return CGREEN + justify('starting',10) + CEND
+        return CGREEN + justify('starting',14) + CEND
     if state == 'terminated':
-        return justify('deleted',10)
+        return justify('deleted',14)
     if state == 'shutting-down':
-        return CRED + justify('stopping',10) + CEND
+        return CRED + justify('stopping',14) + CEND
     if state == 'stopping':
-        return CRED + justify('stopping',10) + CEND
+        return CRED + justify('stopping',14) + CEND
     else:
         return state
 
@@ -197,23 +200,23 @@ def color_cost(unconverted_cost,desc,rate):
     else:
         short_rate = '$'
     if unconverted_cost == 'n/a':
-       return CBLUE + '           n/a ' + CEND + '  per hour'
+       return 'Per hour:  '+CGRAY + ' n/a ' + CEND
     cost = converter.convert(unconverted_cost,rate,preferred_currency) 
     if desc == 'Tax':
-       return CRED + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + '\t ' + CEND + ' - ' + desc
+       return CRED + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),8) + '\t ' + CEND + ' - ' + desc
     elif desc == 'Total': 
-       return CGREEN + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + '\t ' + CEND + ' - ' + desc
+       return CGREEN + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),8) + '\t ' + CEND + ' - ' + desc
     elif desc == 'Hourly':
        if (float(cost) < vm_cheap):
-          return CGREEN + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + ' ' + CEND + ' per hour'
+          return 'Per hour:  '+CGREEN + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),8) + ' ' + CEND
        if (float(cost) >= vm_cheap) and (float(cost) <= vm_expensive):
-          return CYELLOW + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + ' ' + CEND + ' per hour'
+          return 'Per hour:  '+CYELLOW + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),8) + ' ' + CEND
        if (float(cost) > vm_expensive ):
-          return CRED + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + ' ' + CEND + ' per hour'
+          return 'Per hour:  '+CRED + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),8) + ' ' + CEND
     elif desc == '': 
-       return CGREEN + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + '\t ' + CEND
+       return CGREEN + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),8) + '\t ' + CEND
     else:
-       return CBLUE + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),7) + '\t ' + CEND + ' - ' + desc
+       return CBLUE + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),8) + '\t ' + CEND + ' - ' + desc
 
 def cost_format(x):
     digits = 4
@@ -398,8 +401,8 @@ def main(argv):
 
     # CASE 2: nor init nor update were called, AWS not available
     if DARK_MODE:
-        color = '#FFDEDEDE'
-        info_color = '#808080'
+        color = '#000000'
+        info_color = '#F0F0F0'
     else:
         color = 'black' 
         info_color = '#808080'
@@ -437,7 +440,7 @@ def main(argv):
                 json_file.close()
     except: 
        app_print_logo()
-       print ('Failed to get data from EC2 | refresh=true terminal=true bash="\'%s\'" param1="%s" color=%s' % (sys.argv[0], 'init', color))
+       print ('Failed to get data from EC2 | refresh=true terminal=true shell="\'%s\'" param1="%s" color=%s' % (cmd_path, 'init', color))
        return
 
     # CASE 3: all ok, all other cases
@@ -476,7 +479,9 @@ def main(argv):
              except:
                 aws_pricing = 'n/a'
                 pass 
-             print ('%s--%s\t%s\t%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, justify(aws_vmgroup+aws_vmtype,14), justify(aws_vmdesc,18), color_cost(aws_pricing,'Hourly','USD'), aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type "+aws_vmgroup+aws_vmtype+" --ebs-optimized --key-name "+aws_key_name+" --security-group-ids "+aws_security, color))
+
+             print ('%s--%18s%32s%10s | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, justify(aws_vmgroup+aws_vmtype,19), justify(aws_vmdesc,33), color_cost(aws_pricing,'Hourly','USD'), aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type "+aws_vmgroup+aws_vmtype+" --ebs-optimized --key-name "+aws_key_name+" --security-group-ids "+aws_security, color))
+
           print ('%s-----' % prefix)
 
 
@@ -485,10 +490,10 @@ def main(argv):
        try:
           Q = Query()
           db_last_updated = database.search(Q.timestamp != 'null')[0]['timestamp']
-          print ('%s--Last updated:\t%s | color=%s' % (prefix, db_last_updated, color))
-          print ('%s----%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, 'Update AWS pricing',sys.argv[0], "update_pricing", color))
+          print ('%s--Last updated:\t\t     %s | color=%s' % (prefix, db_last_updated, color))
+          print ('%s----%s | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, 'Update AWS pricing',cmd_path, "update_pricing", color))
        except: 
-          print ('%s--%s | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, important('Update AWS pricing'),sys.argv[0], "update_pricing", color))
+          print ('%s--%s | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, important('Update AWS pricing'),cmd_path, "update_pricing", color))
 
        print ('%s---' % prefix)
 
@@ -514,17 +519,17 @@ def main(argv):
               uptime_h = divmod(uptime_d[1], 3600)
               uptime_m = divmod(uptime_h[1], 60)
 
-              print ('%s%s\t%sd:%sh%sm\t\t%s\t\tip: %s ' % (prefix, color_state(state), int(uptime_d[0]),int(uptime_h[0]),int(uptime_m[0]), justify(vmtype,10), ipaddress ))
+              print ('%s%14s\t%sd:%sh%sm\t\t%s\t\tip: %s ' % (prefix, color_state(state), int(uptime_d[0]),int(uptime_h[0]),int(uptime_m[0]), justify(vmtype,10), ipaddress ))
 
               if state == 'running': 
-                print ('%s--Connect | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
+                print ('%s--Connect | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
               if state == 'stopped':
-                 print ('%s--Start | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 start-instances --instance-ids "+current_instance_id, color))
-                 print ('%s--Create image | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 create-image --instance-id "+current_instance_id+" --name Linux-"+time.strftime("%Y%m%d-%Hh%M"), color))
+                 print ('%s--Start | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 start-instances --instance-ids "+current_instance_id, color))
+                 print ('%s--Create image | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 create-image --instance-id "+current_instance_id+" --name Linux-"+time.strftime("%Y%m%d-%Hh%M"), color))
               if state == 'running':
-                 print ('%s--Stop | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 stop-instances --instance-ids "+current_instance_id+" --force", color))
+                 print ('%s--Stop | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 stop-instances --instance-ids "+current_instance_id+" --force", color))
               if (state == 'running') or (state == 'stopped'):
-                 print ('%s--Terminate | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 terminate-instances --instance-ids "+current_instance_id, color))
+                 print ('%s--Terminate | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 terminate-instances --instance-ids "+current_instance_id, color))
               if state == 'running': 
                  print ('%s-----' % (prefix))
                  print ('%s--Screenshot| color=%s' % (prefix, color))
@@ -535,7 +540,7 @@ def main(argv):
                     print ('%s----|Unable to get a screenshot | color=%s' % (prefix, color))
               if state != 'terminated':
                  print ('%s-----' % (prefix))
-                 print ('%s--Serial Console Log| refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, "cat", state_dir+"/myaws-"+current_instance_id+".console.log", color))
+                 print ('%s--Serial Console Log| refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, "cat", state_dir+"/myaws-"+current_instance_id+".console.log", color))
                  with open(state_dir+"/myaws-"+current_instance_id+".console.log",'w') as console_file:
                     serial  = str(subprocess.check_output("/usr/local/bin/aws ec2 get-console-output --output text --instance-id "+current_instance_id, shell=True))
                     console_file.write(serial)
@@ -543,18 +548,18 @@ def main(argv):
        
        if len(image_instance_list) > 0: 
           print ('%s---' % prefix)
-          print ('%sTerminate all Virtual Machines | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 terminate-instances --instance-ids "+" ".join(image_instance_list), color))
+          print ('%sTerminate all Virtual Machines | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 terminate-instances --instance-ids "+" ".join(image_instance_list), color))
 
        print ('%s---' % prefix)
        print ('%sImage' % prefix) 
-       print ('%s--Update | refresh=true terminal=true bash="%s" param1="%s" param2="%s" param3="%s" color=%s' % (prefix, sys.argv[0], "update_image", current_image_id, current_image_snapshot_id, color))
-       print ('%s--Rebuild | refresh=true terminal=true bash="%s" param1="%s" param2="%s" param3="%s" color=%s' % (prefix, sys.argv[0], "rebuild_image", current_image_id, current_image_snapshot_id, color))
+       print ('%s--Update | refresh=true terminal=true shell="%s" param1="%s" param2="%s" param3="%s" color=%s' % (prefix, cmd_path, "update_image", current_image_id, current_image_snapshot_id, color))
+       print ('%s--Rebuild | refresh=true terminal=true shell="%s" param1="%s" param2="%s" param3="%s" color=%s' % (prefix, cmd_path, "rebuild_image", current_image_id, current_image_snapshot_id, color))
 
        if (len(images) > 1):
-          print ('%s--Destroy | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " && /usr/local/bin/aws ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
+          print ('%s--Destroy | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " && /usr/local/bin/aws ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
        else:
-          print ('%s--Destroy | refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " --dry-run && /usr/local/bin/aws ec2 delete-snapshot --dry-run --snapshot-id "+current_image_snapshot_id, info_color))
-          print ('%s--Destroy | alternate=true refresh=true terminal=true bash="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " --dry-run && /usr/local/bin/aws ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
+          print ('%s--Destroy | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " --dry-run && /usr/local/bin/aws ec2 delete-snapshot --dry-run --snapshot-id "+current_image_snapshot_id, info_color))
+          print ('%s--Destroy | alternate=true refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " --dry-run && /usr/local/bin/aws ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
        prefix = ''
 
 
@@ -578,7 +583,7 @@ def main(argv):
         my_snapshots +=1 
         my_snapshots_consumption += snapshot['Size']
 
-    print ('Volumes:\t\t\t %s objects, %s Gb total | color=%s' % (my_volumes, my_volumes_consumption, info_color))
+    print ('Volumes:  \t\t\t %s objects, %s Gb total | color=%s' % (my_volumes, my_volumes_consumption, info_color))
     print ('Snapshots:\t\t\t %s objects, %s Gb total | color=%s' % (my_snapshots, my_snapshots_consumption, info_color))
 
     # -------------------

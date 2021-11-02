@@ -25,8 +25,7 @@ Check your current EC2 spending
 
 1. Ensure you have [aws command line tools](https://docs.aws.amazon.com/cli/latest/userguide/cli-install-macos.html) installed (AWS CLI 1 or 2 are both fine)
 2. Execute 'sudo easy_install tinydb==3.9 awspricing currencyconverter' in Terminal.app
-3. Ensure you have [bitbar](https://github.com/matryer/bitbar/releases/latest) installed.
-4. Ensure your bitbar plugins directory does not have a space in the path (A known bitbar bug)
-5. Copy [myaws.15m.py](myaws.15m.py) to your bitbar plugins folder and chmod +x the file from your terminal in that folder
-6. Run 'myaws.15m.py update' in Terminal.app to retrieve latest pricing
-7. Run bitbar (version 1.9 or <2.0-beta9, xbar not yet supported)
+3. Ensure you have [xbar](https://github.com/matryer/xbar/releases/latest) installed.
+4. Copy [myaws.15m.py](myaws.15m.py) to your bitbar plugins folder and chmod +x the file from your terminal in that folder
+5. Run 'myaws.15m.py update' in Terminal.app to retrieve latest pricing
+6. Run xbar (version 2.1.7-beta or higher)
