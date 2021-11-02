@@ -1,5 +1,5 @@
 
-# MyAWS - OS X Menubar plugin
+# MyAWS - MacOS Menubar plugin
 
 Displays information regarding your AWS EC2 virtual machines in the Mac OS X menubar. 
 Allows you to create, connect to and terminate EC2 virtual machines.
