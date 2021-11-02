@@ -156,7 +156,7 @@ CEND    = '\33[0m'
 CRED    = '\33[31m'
 CGREEN  = '\33[32m'
 CYELLOW = '\33[33m'
-CBLUE   = '\33[34m'
+CBLUE   = '\33[36m'
 CGRAY   = '\33[37m'
 CDGRAY  = '\33[37m'
 
