@@ -29,8 +29,8 @@ aws_command  = '/usr/local/bin/aws'
 aws_region   = 'eu-central-1'
 aws_ostype   = 'Linux' 
 
-vm_cheap     = 0.25
-vm_expensive = 1.0 
+vm_cheap     = 1
+vm_expensive = 2 
 
 preferred_currency = 'EUR' # or 'USD' (or any currency supported by currencyconvertor)
 
@@ -165,8 +165,8 @@ CDGRAY  = '\33[37m'
 CBOLD   = '\033[01m'
 CNORMAL = '\033[00m'
 
-# Support for OS X Dark Mode
-DARK_MODE=os.getenv('XBARDarkMode',0)
+# Support for OS X Dark Mode                                                    
+DARK_MODE=True if os.getenv('XBARDarkMode','false') == 'true' else False  
 
 
 # Logo for both dark mode and regular mode
@@ -400,12 +400,12 @@ def main(argv):
 
 
     # CASE 2: nor init nor update were called, AWS not available
-    if DARK_MODE:
-        color = '#000000'
-        info_color = '#F0F0F0'
-    else:
-        color = 'black' 
-        info_color = '#808080'
+    if bool(DARK_MODE):                                                         
+        color = '#FFFFFE'                                                       
+        info_color = '#C0C0C0'                                                  
+    else:                                                                       
+        color = '#00000E'                                                       
+        info_color = '#616161' 
 
     try: 
         todayDate = datetime.date.today()
