@@ -182,7 +182,7 @@ def color_state(state):
     if state == 'stopped':
         return CRED + justify(state,14) + CEND
     if state == 'pending':
-        return CGREEN + justify('starting',14) + CEND
+        return CGREEN + justify('starting',16) + CEND
     if state == 'terminated':
         return justify('deleted',14)
     if state == 'shutting-down':
@@ -519,7 +519,7 @@ def main(argv):
               uptime_h = divmod(uptime_d[1], 3600)
               uptime_m = divmod(uptime_h[1], 60)
 
-              print ('%s%14s\t%sd:%sh%sm\t\t%s\t\tip: %s ' % (prefix, color_state(state), int(uptime_d[0]),int(uptime_h[0]),int(uptime_m[0]), justify(vmtype,10), ipaddress ))
+              print ('%s%14s\t%02dd : %02dh : %02dm\t\t%s\t\tip: %s ' % (prefix, color_state(state), int(uptime_d[0]),int(uptime_h[0]),int(uptime_m[0]), justify(vmtype,16), ipaddress ))
 
               if state == 'running': 
                 print ('%s--Connect | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
