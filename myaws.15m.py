@@ -1,4 +1,4 @@
-#!/usr/bin/env PYTHONIOENCODING=UTF-8 /usr/bin/python
+#!/usr/bin/env PYTHONIOENCODING=UTF-8 /Library/Frameworks/Python.framework/Versions/2.7/bin/python
 # -*- coding: utf-8 -*-
 #
 # <xbar.title>MyAWS</xbar.title>
@@ -609,7 +609,7 @@ def main(argv):
     for day in daily_cost['ResultsByTime']:
        for group in day['Groups']:
           dailycost += float(group['Metrics']['BlendedCost']['Amount'])
-       print ('----%s : \t%s | color=%s' % (day['TimePeriod']['Start'],color_cost(dailycost,'','USD'),color))
+       print ('----%s : %s | color=%s' % (day['TimePeriod']['Start'],color_cost(dailycost,'','USD'),color))
        for group in day['Groups']:
           if group['Keys'][0] == 'Tax':
              print('---------')
