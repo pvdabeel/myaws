@@ -238,7 +238,7 @@ def important(string):
 
 # The init function: Called to store your AWS access keys
 def init():
-    print 'Please run \'aws configure\''
+    print ('Please run \'aws configure\'')
 
 
 # The update-pricing function: Retrieve EC2 pricing 
@@ -254,9 +254,9 @@ def update_pricing():
              # DB format change (bug in awspricing) aws_pricing = ec2_offer.ondemand_hourly(aws_vmgroup+aws_vmtype,operating_system=aws_ostype,region=aws_region)
              # Ondemand makes a distinction between Used, ReservationBox, ...
              sku = ec2_offer.search_skus(instance_type=aws_vmgroup+aws_vmtype,operating_system=aws_ostype,tenancy='Shared',location='EU (Frankfurt)',licenseModel='No License required', preInstalledSw='NA',capacitystatus='Used').pop()
-             print ec2_offer._offer_data[sku]['terms']['OnDemand']
+             print (ec2_offer._offer_data[sku]['terms']['OnDemand'])
              aws_pricing = next(six.itervalues(next(six.itervalues(ec2_offer._offer_data[sku]['terms']['OnDemand']))['priceDimensions']))['pricePerUnit']['USD']
-             print aws_pricing
+             print (aws_pricing)
           except:
              aws_pricing = 'n/a'
              pass 
@@ -480,7 +480,7 @@ def main(argv):
                 aws_pricing = 'n/a'
                 pass 
 
-             print ('%s--%18s%32s%10s | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, justify(aws_vmgroup+aws_vmtype,19), justify(aws_vmdesc,33), color_cost(aws_pricing,'Hourly','USD'), aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type "+aws_vmgroup+aws_vmtype+" --ebs-optimized --key-name "+aws_key_name+" --security-group-ids "+aws_security, color))
+             print ('%s--%16s\t%30s\t%s | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, justify(aws_vmgroup+aws_vmtype,15), justify(aws_vmdesc,29), color_cost(aws_pricing,'Hourly','USD'), aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type "+aws_vmgroup+aws_vmtype+" --ebs-optimized --key-name "+aws_key_name+" --security-group-ids "+aws_security, color))
 
           print ('%s-----' % prefix)
 
@@ -599,7 +599,7 @@ def main(argv):
     for group in monthly_cost['ResultsByTime'][0]['Groups']:
        if group['Keys'][0] == 'Tax':
           print('-----')
-       print '--%s | color=%s' % (color_cost(group['Metrics']['BlendedCost']['Amount'],group['Keys'][0],group['Metrics']['BlendedCost']['Unit']),color)
+       print ('--%s | color=%s' % (color_cost(group['Metrics']['BlendedCost']['Amount'],group['Keys'][0],group['Metrics']['BlendedCost']['Unit']),color))
     print ('-----')
     print ('--%s | color=%s' % (color_cost(totalcost,'Total','USD'),color))
     totalcost = 0
@@ -613,7 +613,7 @@ def main(argv):
        for group in day['Groups']:
           if group['Keys'][0] == 'Tax':
              print('---------')
-          print '------%s | color=%s' % (color_cost(group['Metrics']['BlendedCost']['Amount'],group['Keys'][0],group['Metrics']['BlendedCost']['Unit']),color)
+          print ('------%s | color=%s' % (color_cost(group['Metrics']['BlendedCost']['Amount'],group['Keys'][0],group['Metrics']['BlendedCost']['Unit']),color))
        print ('---------')
        print ('------%s | color=%s' % (color_cost(dailycost,'Total','USD'),color))
        dailycost = 0
