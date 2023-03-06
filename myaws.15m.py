@@ -519,7 +519,7 @@ def main(argv):
               uptime_h = divmod(uptime_d[1], 3600)
               uptime_m = divmod(uptime_h[1], 60)
 
-              print ('%s%14s\t%02dd : %02dh : %02dm\t\t%s\t\t\t ip: %s ' % (prefix, color_state(state), int(uptime_d[0]),int(uptime_h[0]),int(uptime_m[0]), justify(vmtype,24), ipaddress ))
+              print ('%s%14s %02dd : %02dh : %02dm\t%s ip: %s ' % (prefix, color_state(state), int(uptime_d[0]),int(uptime_h[0]),int(uptime_m[0]), justify(vmtype,24), ipaddress ))
 
               if state == 'running': 
                 print ('%s--Connect | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
