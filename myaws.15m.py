@@ -1,4 +1,4 @@
-#!/usr/bin/env PYTHONIOENCODING=UTF-8 /Library/Frameworks/Python.framework/Versions/2.7/bin/python
+#!/usr/bin/env PYTHONIOENCODING=UTF-8 /opt/local/bin/python
 # -*- coding: utf-8 -*-
 #
 # <xbar.title>MyAWS</xbar.title>
