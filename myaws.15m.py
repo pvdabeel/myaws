@@ -323,7 +323,7 @@ def update_image(cmd=cmd_update):
     print ('--- Instance deployed:      '+CGREEN+instance_id+CEND)
 
     # wait until instance is up and running 
-    print ('--- Checking instance:     ', end=""),
+    print ('--- Checking instance:      ', end=""),
     try:
         subprocess.check_output(aws_command+" ec2 wait instance-running --instance-ids "+instance_id, shell=True)
         print (CGREEN+'running'+CEND)
@@ -334,7 +334,7 @@ def update_image(cmd=cmd_update):
         json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
         return
 
-    print ('--- Instance dnsname:      ', end=""),
+    print ('--- Instance dnsname:       ', end=""),
     try:
         instance_dns = json.loads(subprocess.check_output(aws_command+" ec2 describe-instances --instance-ids "+instance_id+" --query 'Reservations[*].Instances[*].{PublicDnsName:PublicDnsName,State:State}'", shell=True))[0][0]['PublicDnsName']
         print (CGREEN+instance_dns+CEND)
@@ -347,7 +347,7 @@ def update_image(cmd=cmd_update):
 
     # execute update
     print ('--- Updating instance:')
-    print
+    print ('')
     try:
         updateoutcome = subprocess.call("sleep 60 && ssh -q -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"bash -icl "+cmd+"\"", shell=True)
         print
@@ -401,9 +401,9 @@ def update_image(cmd=cmd_update):
         print (CRED+'failed'+CEND)
         print (CRED+'!!! Image cleanup failed'+CEND)
 
-    print
+    print ('')
     print (CYELLOW+CBOLD+'>>> New image created'+CNORMAL+CEND)
-    print
+    print ('')
     return
 
 
