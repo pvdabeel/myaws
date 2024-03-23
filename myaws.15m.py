@@ -323,7 +323,7 @@ def update_image(cmd=cmd_update):
     print ('--- Instance deployed:      '+CGREEN+instance_id+CEND)
 
     # wait until instance is up and running 
-    print ('--- Checking instance:     '),
+    print ('--- Checking instance:     ', end=""),
     try:
         subprocess.check_output(aws_command+" ec2 wait instance-running --instance-ids "+instance_id, shell=True)
         print (CGREEN+'running'+CEND)
@@ -334,7 +334,7 @@ def update_image(cmd=cmd_update):
         json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
         return
 
-    print ('--- Instance dnsname:      '),
+    print ('--- Instance dnsname:      ', end=""),
     try:
         instance_dns = json.loads(subprocess.check_output(aws_command+" ec2 describe-instances --instance-ids "+instance_id+" --query 'Reservations[*].Instances[*].{PublicDnsName:PublicDnsName,State:State}'", shell=True))[0][0]['PublicDnsName']
         print (CGREEN+instance_dns+CEND)
@@ -365,7 +365,7 @@ def update_image(cmd=cmd_update):
         return
 
     # create new image
-    print ('--- Creating new image:    '),
+    print ('--- Creating new image:    ', end="")
     try:
         updated_ami = json.loads(subprocess.check_output(aws_command+" ec2 create-image --instance-id "+instance_id+" --name Linux-"+time.strftime("%Y%m%d-%Hh%M"), shell=True))
         print (CGREEN+'ok'+CEND) 
@@ -374,7 +374,7 @@ def update_image(cmd=cmd_update):
         print (CRED+'!!! Failed to create image'+CEND)
 
     # wait until image is available 
-    print ('--- Checking new image:    '),
+    print ('--- Checking new image:    ', end="")
     try:
         subprocess.check_output(aws_command+" ec2 wait image-available --owners self", shell=True)
         print (CGREEN+'available'+CEND)
@@ -384,7 +384,7 @@ def update_image(cmd=cmd_update):
         return
 
     # Cleanup instance
-    print ('--- Cleanup instance:      '),
+    print ('--- Cleanup instance:      ', end="")
     try: 
         json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
         print (CGREEN+'ok'+CEND)
@@ -393,7 +393,7 @@ def update_image(cmd=cmd_update):
         print (CRED+'!!! Instance cleanup failed'+CEND)
 
     # Cleanup old image 
-    print ('--- Cleanup old image:     '),
+    print ('--- Cleanup old image:     ', end="")
     try: 
         subprocess.check_output(aws_command+" ec2 deregister-image --image-id "+ami_to_update+" && /usr/local/bin/aws ec2 delete-snapshot --snapshot-id "+ami_snap_id, shell=True)
         print (CGREEN+'ok'+CEND)
