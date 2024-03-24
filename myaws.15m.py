@@ -305,9 +305,9 @@ def update_image(cmd=cmd_update):
     ami_to_update = sys.argv[2]
     ami_snap_id   = sys.argv[3]
 
-    print
+    print ('')
     print (CYELLOW+CBOLD+'>>> Updating image:         '+CNORMAL+CGREEN+ami_to_update+CEND)
-    print
+    print ('')
     if (cmd == cmd_update): 
         aws_default_vmtype = aws_default_vmtype_update
     else:
