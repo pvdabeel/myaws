@@ -439,6 +439,17 @@ def main(argv):
         color = '#00000E'                                                       
         info_color = '#616161' 
 
+    
+    # CASE 3a: no internet connection
+    try:
+        requests.get('http://www.google.com',timeout=2)
+    except:
+       app_print_logo()
+       print ('No internet connection | refresh=true terminal=false shell="\'%s\'" param1="%s" color=%s' % (cmd_path, 'true', color))
+       return
+
+
+
     try: 
         todayDate = datetime.date.today()
         monthDate = todayDate.replace(day=1)
@@ -475,7 +486,7 @@ def main(argv):
        print ('Failed to get data from EC2 | refresh=true terminal=true shell="\'%s\'" param1="%s" color=%s' % (cmd_path, 'init', color))
        return
 
-    # CASE 3: all ok, all other cases
+    # CASE 3b: all ok, all other cases
     app_print_logo()
     prefix = '' 
    
