@@ -25,7 +25,7 @@ warnings.filterwarnings("ignore")
 aws_owner_id = '615416975922'
 aws_key_name = 'pvdabeel@mac.com'
 aws_security = 'sg-bce547d1'
-aws_command  = 'aws'
+aws_command  = '/usr/local/bin/aws' # should be a full path
 aws_region   = 'eu-central-1'
 aws_ostype   = 'Linux' 
 
