@@ -25,7 +25,7 @@ warnings.filterwarnings("ignore")
 aws_owner_id = '615416975922'
 aws_key_name = 'pvdabeel@mac.com'
 aws_security = 'sg-bce547d1'
-aws_command  = '/usr/local/bin/aws' # should be a full path
+aws_command  = '/usr/local/bin/aws' # Full path needed
 aws_region   = 'eu-central-1'
 aws_ostype   = 'Linux' 
 
@@ -395,7 +395,7 @@ def update_image(cmd=cmd_update):
     # Cleanup old image 
     print ('--- Cleanup old image:     ', end="")
     try: 
-        subprocess.check_output(aws_command+" ec2 deregister-image --image-id "+ami_to_update+" && /usr/local/bin/aws ec2 delete-snapshot --snapshot-id "+ami_snap_id, shell=True)
+        subprocess.check_output(aws_command+" ec2 deregister-image --image-id "+ami_to_update+" && "+aws_command+" ec2 delete-snapshot --snapshot-id "+ami_snap_id, shell=True)
         print (CGREEN+'ok'+CEND)
     except:
         print (CRED+'failed'+CEND)
@@ -577,7 +577,7 @@ def main(argv):
                  print ('%s-----' % (prefix))
                  print ('%s--Screenshot| color=%s' % (prefix, color))
                  try:
-                    console = json.loads(subprocess.check_output("/usr/local/bin/aws ec2 get-console-screenshot --instance-id "+current_instance_id, shell=True))['ImageData']
+                    console = json.loads(subprocess.check_output(aws_command+" ec2 get-console-screenshot --instance-id "+current_instance_id, shell=True))['ImageData']
                     print ('%s----|image="%s" | color=%s' % (prefix, console, color))
                  except:
                     print ('%s----|Unable to get a screenshot | color=%s' % (prefix, color))
@@ -585,7 +585,7 @@ def main(argv):
                  print ('%s-----' % (prefix))
                  print ('%s--Serial Console Log| refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, "cat", state_dir+"/myaws-"+current_instance_id+".console.log", color))
                  with open(state_dir+"/myaws-"+current_instance_id+".console.log",'w') as console_file:
-                    serial  = str(subprocess.check_output("/usr/local/bin/aws ec2 get-console-output --output text --instance-id "+current_instance_id, shell=True))
+                    serial  = str(subprocess.check_output(aws_command+" ec2 get-console-output --output text --instance-id "+current_instance_id, shell=True))
                     console_file.write(serial)
                     console_file.close()
        
@@ -599,10 +599,10 @@ def main(argv):
        print ('%s--Rebuild | refresh=true terminal=true shell="%s" param1="%s" param2="%s" param3="%s" color=%s' % (prefix, cmd_path, "rebuild_image", current_image_id, current_image_snapshot_id, color))
 
        if (len(images) > 1):
-          print ('%s--Destroy | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " && /usr/local/bin/aws ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
+          print ('%s--Destroy | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " && "+aws_command+" ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
        else:
-          print ('%s--Destroy | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " --dry-run && /usr/local/bin/aws ec2 delete-snapshot --dry-run --snapshot-id "+current_image_snapshot_id, info_color))
-          print ('%s--Destroy | alternate=true refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " --dry-run && /usr/local/bin/aws ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
+          print ('%s--Destroy | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " --dry-run && "+aws_command+" ec2 delete-snapshot --dry-run --snapshot-id "+current_image_snapshot_id, info_color))
+          print ('%s--Destroy | alternate=true refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " --dry-run && "+aws_command+" ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
        prefix = ''
 
 
