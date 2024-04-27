@@ -445,7 +445,7 @@ def main(argv):
         requests.get('http://www.google.com',timeout=2)
     except:
        app_print_logo()
-       print ('No internet connection | refresh=true terminal=false shell="\'%s\'" param1="%s" color=%s' % (cmd_path, 'true', color))
+       print ('No internet connection | refresh=true terminal=false shell="%s" param1="%s" color=%s' % (cmd_path, 'true', color))
        return
 
 
@@ -483,7 +483,7 @@ def main(argv):
                 json_file.close()
     except: 
        app_print_logo()
-       print ('Failed to get data from EC2 | refresh=true terminal=true shell="\'%s\'" param1="%s" color=%s' % (cmd_path, 'init', color))
+       print ('Failed to get data from EC2 | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (cmd_path, 'init', color))
        return
 
     # CASE 3b: all ok, all other cases
