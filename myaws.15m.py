@@ -25,7 +25,7 @@ warnings.filterwarnings("ignore")
 aws_owner_id = '615416975922'
 aws_key_name = 'pvdabeel@mac.com'
 aws_security = 'sg-bce547d1'
-aws_command  = '/usr/local/bin/aws' # Full path needed
+aws_command  = '/opt/local/bin/aws' # Full path needed
 aws_region   = 'eu-central-1'
 aws_ostype   = 'Linux' 
 
@@ -105,9 +105,9 @@ aws_vmtypes  = [#('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
                 ('c7i',[ ('.4xlarge', '(  16 vcpu, 32Gb vram )\t'), 
                          ('.12xlarge','(  48 vcpu, 96Gb vram )\t'), 
                          ('.24xlarge','(  96 vcpu, 192Gb vram )\t'),
-                         ('.48xlarge','( 192 vcpu, 384Gb vram )\t') ]) ]
+                         ('.48xlarge','( 192 vcpu, 384Gb vram )\t') ]),
                 #         ('.metal',   '( 128 vcpu, 256Gb vram )\t') ]) ]
-                #('p3', [ ('.2xlarge', '(   8 vcpu, 61Gb vram )\t'),
+                ('u-6tb1', [ ('.112xlarge', '( 448 vcpu, 6Tb vram )\t') ]) ]
                 #         ('.8xlarge', '(  32 vcpu, 244Gb vram )'), 
                 #         ('.16xlarge','(  64 vcpu, 488Gb vram )')  ]), 
                 #('x1', [ ('.16xlarge','(  64 vcpu, 976Gb vram )\t'),
@@ -158,10 +158,10 @@ import requests
 import decimal
 import awspricing
 import six
+from currency_converter import CurrencyConverter
 
 from datetime import date
 from tinydb import TinyDB, Query
-from currency_converter import CurrencyConverter
 
 
 from os.path import expanduser
@@ -276,7 +276,7 @@ def init():
 # The update-pricing function: Retrieve EC2 pricing 
 def update_pricing(): 
     # Purge existing database
-    database.purge()
+    database.truncate()
     # Get an EC2 price list from amazon
     ec2_offer = awspricing.offer('AmazonEC2')
     # Retrieve latest pricing for vm and insert in database
@@ -481,7 +481,7 @@ def main(argv):
                 daily_cost   = json.loads(subprocess.check_output(aws_command+" ce get-cost-and-usage --time-period Start="+monthDate.strftime("%Y-%m-%d")+",End="+todayDate.strftime("%Y-%m-%d")+" --granularity DAILY --metrics BlendedCost --group-by Type=DIMENSION,Key=SERVICE", shell=True))
                 json.dump(daily_cost,json_file)
                 json_file.close()
-    except: 
+    except Exception: 
        app_print_logo()
        print ('Failed to get data from EC2 | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (cmd_path, 'init', color))
        return
