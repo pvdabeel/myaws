@@ -156,8 +156,8 @@ aws_vmtypes  = [#('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
                 #('mac2-m2pro',[('.metal',   '(  12 core, 32Gb ram )\t') ]) ]
 
 
-aws_default_vmtype_update  = 'c7i.12xlarge'
-aws_default_vmtype_rebuild = 'c7i.48xlarge'
+aws_default_vmtype_update  = 'c8i.12xlarge'
+aws_default_vmtype_rebuild = 'c8i.48xlarge'
 
 # Command to be called inside instance to update it
 
@@ -173,13 +173,10 @@ cmd_rebuild = 'fullupdate'
 # aws ec2 get-console-output --instance-id i-0ed95956c74a187ac --output text
 # aws ce get-cost-and-usage --time-period Start=2018-09-01,End=2018-09-23 --granularity MONTHLY --metrics BlendedCost UnblendedCost UsageQuantity --group-by Type=DIMENSION,Key=SERVICE
 
-import ast
 import json
 import sys
 import datetime
-import calendar
 import base64
-import math
 import time
 import os
 import subprocess
@@ -187,11 +184,8 @@ import requests
 import decimal
 import boto3
 from concurrent.futures import ThreadPoolExecutor
-from currency_converter import CurrencyConverter
 
-from datetime import date
-from tinydb import TinyDB, Query
-
+from tinydb import TinyDB
 
 from os.path import expanduser
 
@@ -208,9 +202,6 @@ cmd_path = os.path.realpath(__file__)
 
 # Tiny DB to store pricing
 database = TinyDB(state_dir+'/myawspricing.json')
-
-# Cost convertor
-converter = CurrencyConverter()
 
 # Nice ANSI colors
 CEND    = '\33[0m'
@@ -255,6 +246,83 @@ def clear_tinydb(db):
     raise RuntimeError(f"Don't know how to clear TinyDB for {type(db)}")
 
 
+# ---------------------------------------------------------------------------
+# Lazy boto3 session + clients (single Session per process, reused across calls)
+# ---------------------------------------------------------------------------
+
+_boto_session = None
+_boto_clients = {}
+
+def _aws_session():
+    global _boto_session
+    if _boto_session is None:
+        _boto_session = boto3.Session(region_name=aws_region)
+    return _boto_session
+
+def _aws_client(service, **kwargs):
+    key = (service, tuple(sorted(kwargs.items())))
+    client = _boto_clients.get(key)
+    if client is None:
+        client = _aws_session().client(service, **kwargs)
+        _boto_clients[key] = client
+    return client
+
+def ec2_client():
+    return _aws_client('ec2')
+
+def ce_client():
+    return _aws_client('ce')
+
+def pricing_client():
+    # AWS Pricing API is only served from us-east-1 / ap-south-1.
+    return _aws_client('pricing', region_name='us-east-1')
+
+
+# ---------------------------------------------------------------------------
+# Lazy CurrencyConverter (constructor parses an embedded ECB CSV; only pay
+# that cost the first time we actually need to format a price).
+# ---------------------------------------------------------------------------
+
+_currency_converter = None
+
+def get_converter():
+    global _currency_converter
+    if _currency_converter is None:
+        from currency_converter import CurrencyConverter
+        _currency_converter = CurrencyConverter()
+    return _currency_converter
+
+
+# ---------------------------------------------------------------------------
+# File-backed TTL cache for read-only AWS describe-* calls. Keeps consecutive
+# xbar refreshes (e.g. "refresh" submenu clicks) snappy. Datetimes are stored
+# as ISO strings so cached and fresh data look identical to consumers.
+# ---------------------------------------------------------------------------
+
+class _DateTimeEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, (datetime.datetime, datetime.date)):
+            return o.isoformat()
+        return super().default(o)
+
+def cached_call(name, ttl_seconds, fn):
+    cache_path = state_dir + '/cache-' + name + '.json'
+    try:
+        if time.time() - os.path.getmtime(cache_path) < ttl_seconds:
+            with open(cache_path) as f:
+                return json.load(f)
+    except (OSError, ValueError):
+        pass
+    data = fn()
+    serialized = json.dumps(data, cls=_DateTimeEncoder)
+    try:
+        with open(cache_path, 'w') as f:
+            f.write(serialized)
+    except OSError:
+        pass
+    return json.loads(serialized)
+
+
 # Pretty printing
 def color_state(state):
     if state == 'running':
@@ -273,30 +341,31 @@ def color_state(state):
         return state
 
 def color_cost(unconverted_cost,desc,rate):
-    if preferred_currency == 'USD': 
-        short_rate = '$'
-    elif preferred_currency == 'EUR':
-        short_rate = u"€" 
+    if preferred_currency == 'EUR':
+        short_rate = u"€"
     else:
         short_rate = '$'
     if unconverted_cost == 'n/a':
        return 'Per hour:  '+CGRAY + ' n/a ' + CEND
-    cost = converter.convert(unconverted_cost,rate,preferred_currency) 
+    cost     = float(get_converter().convert(unconverted_cost, rate, preferred_currency))
+    amount   = justify(str(cost_format(round(cost, 4))), 8)
+    body     = short_rate + ' ' + amount
     if desc == 'Tax':
-       return CRED + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),8) + '\t ' + CEND + ' - ' + desc
-    elif desc == 'Total': 
-       return CGREEN + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),8) + '\t ' + CEND + ' - ' + desc
+       return CRED + body + '\t ' + CEND + ' - ' + desc
+    elif desc == 'Total':
+       return CGREEN + body + '\t ' + CEND + ' - ' + desc
     elif desc == 'Hourly':
-       if (float(cost) < vm_cheap):
-          return 'Per hour:  '+CGREEN + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),8) + ' ' + CEND
-       if (float(cost) >= vm_cheap) and (float(cost) <= vm_expensive):
-          return 'Per hour:  '+CYELLOW + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),8) + ' ' + CEND
-       if (float(cost) > vm_expensive ):
-          return 'Per hour:  '+CRED + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),8) + ' ' + CEND
-    elif desc == '': 
-       return CGREEN + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),8) + '\t ' + CEND
+       if cost < vm_cheap:
+          color = CGREEN
+       elif cost <= vm_expensive:
+          color = CYELLOW
+       else:
+          color = CRED
+       return 'Per hour:  ' + color + body + ' ' + CEND
+    elif desc == '':
+       return CGREEN + body + '\t ' + CEND
     else:
-       return CBLUE + short_rate + ' ' + justify(str(cost_format(round(float(cost),4))),8) + '\t ' + CEND + ' - ' + desc
+       return CBLUE + body + '\t ' + CEND + ' - ' + desc
 
 def cost_format(x):
     digits = 4
@@ -304,10 +373,7 @@ def cost_format(x):
     return temp[:temp.find('.') + digits + 1]
 
 
-def justify(string):
-    return justify(string,10)
-
-def justify(string,number):
+def justify(string, number=10):
     length = len(string)
     quot   = (number - length ) // 4
     rem    = (number - length )  % 4
@@ -327,8 +393,7 @@ def init():
 # file via awspricing. Each instance type only needs a small filtered query,
 # and we run them in parallel and write the TinyDB once at the end.
 def update_pricing():
-    # AWS Pricing API is only served from us-east-1 / ap-south-1.
-    pricing = boto3.client('pricing', region_name='us-east-1')
+    pricing = pricing_client()
     location = aws_region_to_location.get(aws_region, 'EU (Frankfurt)')
 
     def fetch_one(item):
@@ -369,105 +434,131 @@ def update_pricing():
 
 # The update-image function: Update an EC2 image
 def update_image(cmd=cmd_update):
-    if (len(sys.argv) != 4): 
+    if (len(sys.argv) != 4):
         print ('Please provide an ami name and ami snapshot id as argument')
         return
     ami_to_update = sys.argv[2]
     ami_snap_id   = sys.argv[3]
 
+    ec2 = ec2_client()
+
     print ('')
     print (CYELLOW+CBOLD+'>>> Updating image:         '+CNORMAL+CGREEN+ami_to_update+CEND)
     print ('')
-    if (cmd == cmd_update): 
+    if (cmd == cmd_update):
         aws_default_vmtype = aws_default_vmtype_update
     else:
         aws_default_vmtype = aws_default_vmtype_rebuild
 
     # for the given AMI image, spawn an instance
     print ('--- Deploying instance:     '+CGREEN+aws_default_vmtype+CEND)
-    try: 
-        instance_id = json.loads(subprocess.check_output(aws_command+" ec2 run-instances --image-id "+ami_to_update+" --instance-type "+aws_default_vmtype+" --ebs-optimized --key-name "+aws_key_name+" --security-group-ids "+aws_security, shell=True))['Instances'][0]['InstanceId']
-    except: 
-        print (CRED+'!!! Failed to deploy instance'+CEND) 
+    try:
+        run_resp = ec2.run_instances(
+            ImageId=ami_to_update,
+            InstanceType=aws_default_vmtype,
+            EbsOptimized=True,
+            KeyName=aws_key_name,
+            SecurityGroupIds=[aws_security],
+            MinCount=1,
+            MaxCount=1,
+        )
+        instance_id = run_resp['Instances'][0]['InstanceId']
+    except Exception:
+        print (CRED+'!!! Failed to deploy instance'+CEND)
         return
     print ('--- Instance deployed:      '+CGREEN+instance_id+CEND)
 
-    # wait until instance is up and running 
-    print ('--- Checking instance:      ', end=""),
+    def _terminate_quietly():
+        try:
+            ec2.terminate_instances(InstanceIds=[instance_id])
+        except Exception:
+            pass
+
+    # wait until instance is up and running
+    print ('--- Checking instance:      ', end="")
     try:
-        subprocess.check_output(aws_command+" ec2 wait instance-running --instance-ids "+instance_id, shell=True)
+        ec2.get_waiter('instance_running').wait(InstanceIds=[instance_id])
         print (CGREEN+'running'+CEND)
-    except: 
+    except Exception:
         print (CRED+'failed'+CEND)
         print (CRED+'!!! Instance failed to reach running state'+CEND)
-        # Destroy instance
-        json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
+        _terminate_quietly()
         return
 
-    print ('--- Instance dnsname:       ', end=""),
+    print ('--- Instance dnsname:       ', end="")
     try:
-        instance_dns = json.loads(subprocess.check_output(aws_command+" ec2 describe-instances --instance-ids "+instance_id+" --query 'Reservations[*].Instances[*].{PublicDnsName:PublicDnsName,State:State}'", shell=True))[0][0]['PublicDnsName']
+        desc = ec2.describe_instances(InstanceIds=[instance_id])
+        instance_dns = desc['Reservations'][0]['Instances'][0]['PublicDnsName']
         print (CGREEN+instance_dns+CEND)
-    except: 
+    except Exception:
         print (CRED+'failed'+CEND)
         print (CRED+'!!! Failed to get instance dnsname'+CEND)
-         # Destroy instance
-        json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
+        _terminate_quietly()
         return
 
-    # execute update
+    # execute update (still uses ssh; no boto3 equivalent)
     print ('--- Updating instance:', end="")
     print ('')
     try:
-        updateoutcome = subprocess.call("sleep 60 && ssh -q -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+instance_dns+ " \"bash -icl "+cmd+"\"", shell=True)
+        updateoutcome = subprocess.call(
+            "sleep 60 && ssh -q -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"
+            + instance_dns + " \"bash -icl " + cmd + "\"", shell=True)
         print ('')
-    except:
+    except Exception:
         print (CRED+'!!! Failed to update instance'+CEND)
-        # Destroy instance
-        json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
+        _terminate_quietly()
         print ('')
         return
 
     if (updateoutcome):
         print (CRED+'!!! Failed to update instance'+CEND)
-        json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
+        _terminate_quietly()
         print ('')
         return
 
     # create new image
     print ('--- Creating new image:    ', end="")
+    new_image_id = None
     try:
-        updated_ami = json.loads(subprocess.check_output(aws_command+" ec2 create-image --instance-id "+instance_id+" --name Linux-"+time.strftime("%Y%m%d-%Hh%M"), shell=True))
-        print (CGREEN+'ok'+CEND) 
-    except: 
+        updated_ami = ec2.create_image(
+            InstanceId=instance_id,
+            Name='Linux-' + time.strftime("%Y%m%d-%Hh%M"),
+        )
+        new_image_id = updated_ami['ImageId']
+        print (CGREEN+'ok'+CEND)
+    except Exception:
         print (CRED+'failed'+CEND)
         print (CRED+'!!! Failed to create image'+CEND)
 
-    # wait until image is available 
+    # wait until image is available
     print ('--- Checking new image:    ', end="")
     try:
-        subprocess.check_output(aws_command+" ec2 wait image-available --owners self", shell=True)
+        if new_image_id:
+            ec2.get_waiter('image_available').wait(ImageIds=[new_image_id])
+        else:
+            ec2.get_waiter('image_available').wait(Owners=['self'])
         print (CGREEN+'available'+CEND)
-    except: 
+    except Exception:
         print (CRED+'failed'+CEND)
         print (CRED+'!!! Image failed to reach available state'+CEND)
         return
 
     # Cleanup instance
     print ('--- Cleanup instance:      ', end="")
-    try: 
-        json.loads(subprocess.check_output(aws_command+" ec2 terminate-instances --instance-ids "+instance_id, shell=True))
+    try:
+        ec2.terminate_instances(InstanceIds=[instance_id])
         print (CGREEN+'ok'+CEND)
-    except:
+    except Exception:
         print (CRED+'failed'+CEND)
         print (CRED+'!!! Instance cleanup failed'+CEND)
 
-    # Cleanup old image 
+    # Cleanup old image
     print ('--- Cleanup old image:     ', end="")
-    try: 
-        subprocess.check_output(aws_command+" ec2 deregister-image --image-id "+ami_to_update+" && "+aws_command+" ec2 delete-snapshot --snapshot-id "+ami_snap_id, shell=True)
+    try:
+        ec2.deregister_image(ImageId=ami_to_update)
+        ec2.delete_snapshot(SnapshotId=ami_snap_id)
         print (CGREEN+'ok'+CEND)
-    except:
+    except Exception:
         print (CRED+'failed'+CEND)
         print (CRED+'!!! Image cleanup failed'+CEND)
 
@@ -520,7 +611,7 @@ def main(argv):
 
 
 
-    try: 
+    try:
         todayDate = datetime.date.today()
         monthDate = todayDate.replace(day=1)
 
@@ -528,33 +619,86 @@ def main(argv):
            monthDate = monthDate - datetime.timedelta(days=1)
            monthDate = monthDate.replace(day=1)
 
-        images       = json.loads(subprocess.check_output(aws_command+" ec2 describe-images --owners "+aws_owner_id+" --query 'Images[*].{ImageId:ImageId,Name:Name,SnapshotId:BlockDeviceMappings[0].Ebs.SnapshotId}'", shell=True))
-        instances    = json.loads(subprocess.check_output(aws_command+" ec2 describe-instances --query 'Reservations[*].Instances[*].{PublicDnsName:PublicDnsName,State:State,InstanceType:InstanceType,PublicIpAddress:PublicIpAddress,InstanceId:InstanceId,ImageId:ImageId,LaunchTime:LaunchTime}'", shell=True))
-        volumes      = json.loads(subprocess.check_output(aws_command+" ec2 describe-volumes --query 'Volumes[*].{Size:Size}'", shell=True))
-        snapshots    = json.loads(subprocess.check_output(aws_command+" ec2 describe-snapshots --owner-ids "+aws_owner_id+" --query 'Snapshots[*].{Size:VolumeSize}'", shell=True))
+        ec2 = ec2_client()
+        ce  = ce_client()
 
+        # Short-TTL cache for read-only describe calls so consecutive xbar
+        # refreshes (e.g. clicking "refresh=true" items) stay snappy.
+        DESCRIBE_TTL = 30  # seconds
+
+        images_resp    = cached_call('describe-images',    DESCRIBE_TTL,
+                                     lambda: ec2.describe_images(Owners=[aws_owner_id]))
+        instances_resp = cached_call('describe-instances', DESCRIBE_TTL,
+                                     lambda: ec2.describe_instances())
+        volumes_resp   = cached_call('describe-volumes',   DESCRIBE_TTL,
+                                     lambda: ec2.describe_volumes())
+        snapshots_resp = cached_call('describe-snapshots', DESCRIBE_TTL,
+                                     lambda: ec2.describe_snapshots(OwnerIds=[aws_owner_id]))
+
+        # Normalise images so existing consumers can keep using
+        # image['ImageId'] / image['Name'] / image['SnapshotId'].
+        images = []
+        for img in images_resp.get('Images', []):
+            snap_id = None
+            for bdm in img.get('BlockDeviceMappings') or []:
+                ebs = bdm.get('Ebs') or {}
+                if ebs.get('SnapshotId'):
+                    snap_id = ebs['SnapshotId']
+                    break
+            images.append({
+                'ImageId':    img.get('ImageId'),
+                'Name':       img.get('Name'),
+                'SnapshotId': snap_id,
+            })
+
+        # Flatten reservations -> single list of instance dicts.
+        instances = [i for r in instances_resp.get('Reservations', [])
+                       for i in r.get('Instances', [])]
+        volumes   = volumes_resp.get('Volumes', [])
+        snapshots = snapshots_resp.get('Snapshots', [])
+
+        # Cost data is cached per-day. Use boto3 instead of the CLI when we
+        # actually have to fetch (saves ~1s of CLI cold-start each call).
+        def _fetch_cost(granularity):
+            return ce.get_cost_and_usage(
+                TimePeriod={'Start': monthDate.strftime("%Y-%m-%d"),
+                            'End':   todayDate.strftime("%Y-%m-%d")},
+                Granularity=granularity,
+                Metrics=['BlendedCost'],
+                GroupBy=[{'Type': 'DIMENSION', 'Key': 'SERVICE'}],
+            )
+
+        monthly_path = state_dir+'/myaws-costs-monthly'+todayDate.strftime("%Y%m%d")+'.json'
         try:
-            with open(state_dir+'/myaws-costs-monthly'+todayDate.strftime("%Y%m%d")+'.json') as json_file:
+            with open(monthly_path) as json_file:
                 monthly_cost = json.load(json_file)
-                json_file.close()
-        except: 
-            with open(state_dir+'/myaws-costs-monthly'+todayDate.strftime("%Y%m%d")+'.json','w') as json_file:
-                monthly_cost = json.loads(subprocess.check_output(aws_command+" ce get-cost-and-usage --time-period Start="+monthDate.strftime("%Y-%m-%d")+",End="+todayDate.strftime("%Y-%m-%d")+" --granularity MONTHLY --metrics BlendedCost --group-by Type=DIMENSION,Key=SERVICE", shell=True))
-                json.dump(monthly_cost,json_file)
-                json_file.close()
+        except (OSError, ValueError):
+            monthly_cost = _fetch_cost('MONTHLY')
+            with open(monthly_path, 'w') as json_file:
+                json.dump(monthly_cost, json_file, cls=_DateTimeEncoder)
+
+        daily_path = state_dir+'/myaws-costs-daily'+todayDate.strftime("%Y%m%d")+'.json'
         try:
-            with open(state_dir+'/myaws-costs-daily'+todayDate.strftime("%Y%m%d")+'.json') as json_file:
+            with open(daily_path) as json_file:
                 daily_cost = json.load(json_file)
-                json_file.close()
-        except: 
-            with open(state_dir+'/myaws-costs-daily'+todayDate.strftime("%Y%m%d")+'.json','w') as json_file:
-                daily_cost   = json.loads(subprocess.check_output(aws_command+" ce get-cost-and-usage --time-period Start="+monthDate.strftime("%Y-%m-%d")+",End="+todayDate.strftime("%Y-%m-%d")+" --granularity DAILY --metrics BlendedCost --group-by Type=DIMENSION,Key=SERVICE", shell=True))
-                json.dump(daily_cost,json_file)
-                json_file.close()
-    except Exception: 
+        except (OSError, ValueError):
+            daily_cost = _fetch_cost('DAILY')
+            with open(daily_path, 'w') as json_file:
+                json.dump(daily_cost, json_file, cls=_DateTimeEncoder)
+    except Exception:
        app_print_logo()
        print ('Failed to get data from EC2 | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (cmd_path, 'init', color))
        return
+
+    # Build an in-memory pricing index once instead of scanning TinyDB
+    # len(images) * len(vmtypes) times inside the loop below.
+    price_by_type = {}
+    db_last_updated = None
+    for row in database.all():
+        if 'type' in row:
+            price_by_type[row['type']] = row['pricing']
+        elif 'timestamp' in row:
+            db_last_updated = row['timestamp']
 
     # CASE 3b: all ok, all other cases
     app_print_logo()
@@ -582,59 +726,48 @@ def main(argv):
        # print menu with relevant info and actions
        print ('%sDeploy new Virtual Machine | color=%s' % (prefix, color))
 
-       aws_pricing = 'n/a'
-       
        for (aws_vmgroup,aws_vmtypelist) in aws_vmtypes:
           for (aws_vmtype,aws_vmdesc) in aws_vmtypelist:
-             Q = Query()
-             try: 
-                aws_pricing = database.search(Q.type==aws_vmgroup+aws_vmtype)[0]['pricing']
-             except:
-                aws_pricing = 'n/a'
-                pass 
-
-             print ('%s--%16s\t%30s\t%s | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, justify(aws_vmgroup+aws_vmtype,17), justify(aws_vmdesc,30), color_cost(aws_pricing,'Hourly','USD'), aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type "+aws_vmgroup+aws_vmtype+" --ebs-optimized --key-name "+aws_key_name+" --security-group-ids "+aws_security, color))
+             instance_type = aws_vmgroup + aws_vmtype
+             aws_pricing   = price_by_type.get(instance_type, 'n/a')
+             print ('%s--%16s\t%30s\t%s | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, justify(instance_type,17), justify(aws_vmdesc,30), color_cost(aws_pricing,'Hourly','USD'), aws_command, "ec2 run-instances --image-id "+current_image_id+" --instance-type "+instance_type+" --ebs-optimized --key-name "+aws_key_name+" --security-group-ids "+aws_security, color))
 
           print ('%s-----' % prefix)
 
 
-       db_last_updated = False
-
-       try:
-          Q = Query()
-          db_last_updated = database.search(Q.timestamp != 'null')[0]['timestamp']
+       if db_last_updated:
           print ('%s--Last updated:\t\t     %s | color=%s' % (prefix, db_last_updated, color))
           print ('%s----%s | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, 'Update AWS pricing',cmd_path, "update_pricing", color))
-       except: 
+       else:
           print ('%s--%s | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, important('Update AWS pricing'),cmd_path, "update_pricing", color))
 
        print ('%s---' % prefix)
 
 
-       # loop through instances, 
+       # loop through instances
        image_instance_list = []
 
-       for instance in instances:
+       for instance_json in instances:
 
-           instance_json=instance[0]
-           
            current_instance_id = instance_json['InstanceId']
 
-           if instance_json['ImageId'] == current_image_id: 
+           if instance_json['ImageId'] == current_image_id:
               image_instance_list.append(current_instance_id)
-              state = instance_json['State']['Name'] 
-              dnsname = instance_json['PublicDnsName']
-              vmtype = instance_json['InstanceType']
-              ipaddress = instance_json['PublicIpAddress']
+              state      = instance_json['State']['Name']
+              dnsname    = instance_json.get('PublicDnsName', '') or ''
+              vmtype     = instance_json['InstanceType']
+              ipaddress  = instance_json.get('PublicIpAddress', '') or ''
+              # LaunchTime arrives as an ISO string (cached_call serialises
+              # boto3 datetimes via _DateTimeEncoder.isoformat()).
               launchtime = datetime.datetime.strptime(instance_json['LaunchTime'][:19],'%Y-%m-%dT%H:%M:%S')
-              uptime = datetime.datetime.utcnow() - launchtime
-              uptime_d = divmod(uptime.total_seconds(),86400)
-              uptime_h = divmod(uptime_d[1], 3600)
-              uptime_m = divmod(uptime_h[1], 60)
+              uptime     = datetime.datetime.utcnow() - launchtime
+              uptime_d   = divmod(uptime.total_seconds(),86400)
+              uptime_h   = divmod(uptime_d[1], 3600)
+              uptime_m   = divmod(uptime_h[1], 60)
 
               print ('%s%14s %02dd : %02dh : %02dm\t%s ip: %s ' % (prefix, color_state(state), int(uptime_d[0]),int(uptime_h[0]),int(uptime_m[0]), justify(vmtype,24), ipaddress ))
 
-              if state == 'running': 
+              if state == 'running':
                 print ('%s--Connect | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
               if state == 'stopped':
                  print ('%s--Start | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 start-instances --instance-ids "+current_instance_id, color))
@@ -643,21 +776,24 @@ def main(argv):
                  print ('%s--Stop | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 stop-instances --instance-ids "+current_instance_id+" --force", color))
               if (state == 'running') or (state == 'stopped'):
                  print ('%s--Terminate | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 terminate-instances --instance-ids "+current_instance_id, color))
-              if state == 'running': 
+              if state == 'running':
                  print ('%s-----' % (prefix))
                  print ('%s--Screenshot| color=%s' % (prefix, color))
                  try:
-                    console = json.loads(subprocess.check_output(aws_command+" ec2 get-console-screenshot --instance-id "+current_instance_id, shell=True))['ImageData']
+                    console = ec2.get_console_screenshot(InstanceId=current_instance_id)['ImageData']
                     print ('%s----|image="%s" | color=%s' % (prefix, console, color))
-                 except:
+                 except Exception:
                     print ('%s----|Unable to get a screenshot | color=%s' % (prefix, color))
               if state != 'terminated':
                  print ('%s-----' % (prefix))
                  print ('%s--Serial Console Log| refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, "cat", state_dir+"/myaws-"+current_instance_id+".console.log", color))
+                 try:
+                    raw_output = ec2.get_console_output(InstanceId=current_instance_id).get('Output', '')
+                    serial = base64.b64decode(raw_output).decode('utf-8', errors='replace') if raw_output else ''
+                 except Exception:
+                    serial = ''
                  with open(state_dir+"/myaws-"+current_instance_id+".console.log",'w') as console_file:
-                    serial  = str(subprocess.check_output(aws_command+" ec2 get-console-output --output text --instance-id "+current_instance_id, shell=True))
                     console_file.write(serial)
-                    console_file.close()
        
        if len(image_instance_list) > 0: 
           print ('%s---' % prefix)
@@ -693,8 +829,8 @@ def main(argv):
         my_volumes_consumption += volume['Size']
     
     for snapshot in snapshots:
-        my_snapshots +=1 
-        my_snapshots_consumption += snapshot['Size']
+        my_snapshots +=1
+        my_snapshots_consumption += snapshot.get('VolumeSize', 0)
 
     print ('Volumes:  \t\t\t %s objects, %s Gb total | color=%s' % (my_volumes, my_volumes_consumption, info_color))
     print ('Snapshots:\t\t\t %s objects, %s Gb total | color=%s' % (my_snapshots, my_snapshots_consumption, info_color))
