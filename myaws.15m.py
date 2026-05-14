@@ -13,7 +13,7 @@
 # Installation instructions: 
 # -------------------------- 
 # Ensure you have the Amazon EC2 CLI installed (see Readme for link)
-# Run 'sudo easy_install tinydb awspricing' in Terminal.app
+# Run 'sudo pip install tinydb boto3 currencyconverter' in Terminal.app
 # Ensure you have xbar installed https://github.com/matryer/xbar-plugins
 # Copy this file to your xbar plugins folder and chmod +x the file from your terminal in that folder
 # Run xbar
@@ -27,7 +27,29 @@ aws_key_name = 'pvdabeel@mac.com'
 aws_security = 'sg-bce547d1'
 aws_command  = '/opt/local/bin/aws' # Full path needed
 aws_region   = 'eu-central-1'
-aws_ostype   = 'Linux' 
+aws_ostype   = 'Linux'
+
+# AWS Pricing API uses verbose location names instead of region codes.
+# Extend this map if you switch aws_region to something not listed here.
+aws_region_to_location = {
+    'us-east-1':      'US East (N. Virginia)',
+    'us-east-2':      'US East (Ohio)',
+    'us-west-1':      'US West (N. California)',
+    'us-west-2':      'US West (Oregon)',
+    'eu-central-1':   'EU (Frankfurt)',
+    'eu-west-1':      'EU (Ireland)',
+    'eu-west-2':      'EU (London)',
+    'eu-west-3':      'EU (Paris)',
+    'eu-north-1':     'EU (Stockholm)',
+    'eu-south-1':     'EU (Milan)',
+    'ap-northeast-1': 'Asia Pacific (Tokyo)',
+    'ap-northeast-2': 'Asia Pacific (Seoul)',
+    'ap-southeast-1': 'Asia Pacific (Singapore)',
+    'ap-southeast-2': 'Asia Pacific (Sydney)',
+    'ap-south-1':     'Asia Pacific (Mumbai)',
+    'ca-central-1':   'Canada (Central)',
+    'sa-east-1':      'South America (Sao Paulo)',
+}
 
 vm_cheap     = 1
 vm_expensive = 2 
@@ -163,8 +185,8 @@ import os
 import subprocess
 import requests
 import decimal
-import awspricing
-import six
+import boto3
+from concurrent.futures import ThreadPoolExecutor
 from currency_converter import CurrencyConverter
 
 from datetime import date
@@ -299,28 +321,50 @@ def init():
     print ('Please run \'aws configure\'')
 
 
-# The update-pricing function: Retrieve EC2 pricing 
-def update_pricing(): 
-    # Purge existing database
+# The update-pricing function: Retrieve EC2 pricing
+#
+# Uses the AWS Pricing API (boto3) instead of downloading the full EC2 offer
+# file via awspricing. Each instance type only needs a small filtered query,
+# and we run them in parallel and write the TinyDB once at the end.
+def update_pricing():
+    # AWS Pricing API is only served from us-east-1 / ap-south-1.
+    pricing = boto3.client('pricing', region_name='us-east-1')
+    location = aws_region_to_location.get(aws_region, 'EU (Frankfurt)')
+
+    def fetch_one(item):
+        aws_vmgroup, aws_vmtype = item
+        instance_type = aws_vmgroup + aws_vmtype
+        try:
+            resp = pricing.get_products(
+                ServiceCode='AmazonEC2',
+                Filters=[
+                    {'Type': 'TERM_MATCH', 'Field': 'instanceType',    'Value': instance_type},
+                    {'Type': 'TERM_MATCH', 'Field': 'operatingSystem', 'Value': aws_ostype},
+                    {'Type': 'TERM_MATCH', 'Field': 'tenancy',         'Value': 'Shared'},
+                    {'Type': 'TERM_MATCH', 'Field': 'location',        'Value': location},
+                    {'Type': 'TERM_MATCH', 'Field': 'preInstalledSw',  'Value': 'NA'},
+                    {'Type': 'TERM_MATCH', 'Field': 'capacitystatus',  'Value': 'Used'},
+                    {'Type': 'TERM_MATCH', 'Field': 'licenseModel',    'Value': 'No License required'},
+                ],
+                MaxResults=1,
+            )
+            product = json.loads(resp['PriceList'][0])
+            term         = next(iter(product['terms']['OnDemand'].values()))
+            price_dim    = next(iter(term['priceDimensions'].values()))
+            aws_pricing  = price_dim['pricePerUnit']['USD']
+        except Exception:
+            aws_pricing = 'n/a'
+        return {'type': instance_type, 'pricing': aws_pricing}
+
+    items = [(g, t) for (g, tl) in aws_vmtypes for (t, _) in tl]
+
+    with ThreadPoolExecutor(max_workers=min(16, max(1, len(items)))) as pool:
+        records = list(pool.map(fetch_one, items))
+
     clear_tinydb(database)
-    # Get an EC2 price list from amazon
-    ec2_offer = awspricing.offer('AmazonEC2')
-    # Retrieve latest pricing for vm and insert in database
-    for (aws_vmgroup,aws_vmtypelist) in aws_vmtypes:
-       for (aws_vmtype,aws_vmdesc) in aws_vmtypelist:
-          try:
-             # DB format change (bug in awspricing) aws_pricing = ec2_offer.ondemand_hourly(aws_vmgroup+aws_vmtype,operating_system=aws_ostype,region=aws_region)
-             # Ondemand makes a distinction between Used, ReservationBox, ...
-             sku = ec2_offer.search_skus(instance_type=aws_vmgroup+aws_vmtype,operating_system=aws_ostype,tenancy='Shared',location='EU (Frankfurt)',licenseModel='No License required', preInstalledSw='NA',capacitystatus='Used').pop()
-             print (ec2_offer._offer_data[sku]['terms']['OnDemand'])
-             aws_pricing = next(six.itervalues(next(six.itervalues(ec2_offer._offer_data[sku]['terms']['OnDemand']))['priceDimensions']))['pricePerUnit']['USD']
-             print (aws_pricing)
-          except:
-             aws_pricing = 'n/a'
-             pass 
-          database.insert({'type':aws_vmgroup+aws_vmtype,'pricing':aws_pricing})
-    # Store timestamp
-    database.insert({'timestamp':str(datetime.datetime.now().strftime('%Y-%m-%d %H:%M'))})
+    if records:
+        database.insert_multiple(records)
+    database.insert({'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M')})
 
 
 # The update-image function: Update an EC2 image
