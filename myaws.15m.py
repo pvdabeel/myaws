@@ -134,6 +134,11 @@ aws_vmtypes  = [#('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
                          ('.24xlarge','(  96 vcpu, 192Gb vram )\t'),
                          ('.48xlarge','( 192 vcpu, 384Gb vram )\t'),
                          ('.96xlarge','( 384 vcpu, 768Gb vram )\t') ]),
+
+                ('m8i',[ ('.12xlarge','(  48 vcpu, 192Gb vram )\t'),
+                         ('.24xlarge','(  96 vcpu, 384Gb vram )\t'),
+                         ('.48xlarge','( 192 vcpu, 768Gb vram )\t'),
+                         ('.96xlarge','( 384 vcpu, 1536Gb vram )\t') ]),
  
                 #         ('.metal',   '( 128 vcpu, 256Gb vram )\t') ]) ]
                 ('u-6tb1', [ ('.112xlarge', '( 448 vcpu, 6Tb vram )\t') ]) ]
@@ -158,11 +163,22 @@ aws_vmtypes  = [#('t2', [ ('.micro',   '(   1 vcpu, 1Gb vram )\t'),
 
 aws_default_vmtype_update  = 'c8i.12xlarge'
 aws_default_vmtype_rebuild = 'c8i.48xlarge'
+# 192 vCPU / 768 GiB — memory-optimized; better headroom for tmpfs tinder runs.
+aws_default_vmtype_tinder  = 'm8i.48xlarge'
 
 # Command to be called inside instance to update it
 
-cmd_update  = 'update' 
-cmd_rebuild = 'fullupdate' 
+cmd_update  = 'update'
+cmd_rebuild = 'fullupdate'
+cmd_tinder  = '/root/bin/tinder'
+
+# Passed to the ephemeral tinder worker (100-package smoke test).
+tinder_env = (
+    'TINDER_MANIFEST=manifest-100.txt'
+    ' TINDER_MATRIX_MODE=--pretend'
+    ' TINDER_JOBS=32'
+    ' NPROC=32'
+)
 
 # aws ec2 describe-images --owners 615416975922 --query 'Images[*].{ID:ImageId}'
 # aws ec2 run-instances --image-id ami-089fc69c2ca496809 --count 1 --ebs-optimized --instance-type t2.micro --key-name gentoo --security-group-ids sg-bce547d1
@@ -180,6 +196,7 @@ import base64
 import time
 import os
 import subprocess
+import shlex
 import requests
 import decimal
 import boto3
@@ -568,6 +585,155 @@ def update_image(cmd=cmd_update):
     return
 
 
+# Bake /root/bin/tinder (and the rest of the root disk) into a new AMI from a
+# running instance.  Does not run emerge update — use update_image() for that.
+def bake_tinder_ami():
+    if (len(sys.argv) < 3):
+        print ('Please provide instance-id as argument')
+        return
+    instance_id = sys.argv[2]
+    old_ami_id  = sys.argv[3] if len(sys.argv) > 3 else None
+    old_snap_id = sys.argv[4] if len(sys.argv) > 4 else None
+
+    ec2 = ec2_client()
+
+    print ('')
+    print (CYELLOW+CBOLD+'>>> Baking AMI from instance: '+CNORMAL+CGREEN+instance_id+CEND)
+    print ('')
+
+    print ('--- Creating new image:    ', end="")
+    new_image_id = None
+    try:
+        baked = ec2.create_image(
+            InstanceId=instance_id,
+            Name='Linux-' + time.strftime("%Y%m%d-%Hh%M") + '-tinder',
+            Description='Gentoo AMI with /root/bin/tinder baked in',
+        )
+        new_image_id = baked['ImageId']
+        print (CGREEN+new_image_id+CEND)
+    except Exception:
+        print (CRED+'failed'+CEND)
+        print (CRED+'!!! Failed to create image'+CEND)
+        return
+
+    print ('--- Checking new image:    ', end="")
+    try:
+        ec2.get_waiter('image_available').wait(ImageIds=[new_image_id])
+        print (CGREEN+'available'+CEND)
+    except Exception:
+        print (CRED+'failed'+CEND)
+        print (CRED+'!!! Image failed to reach available state'+CEND)
+        return
+
+    if old_ami_id and old_snap_id:
+        print ('--- Cleanup old image:     ', end="")
+        try:
+            ec2.deregister_image(ImageId=old_ami_id)
+            ec2.delete_snapshot(SnapshotId=old_snap_id)
+            print (CGREEN+'ok'+CEND)
+        except Exception:
+            print (CRED+'failed'+CEND)
+            print (CRED+'!!! Old image cleanup failed'+CEND)
+
+    print ('')
+    print (CYELLOW+CBOLD+'>>> AMI ready: '+CNORMAL+CGREEN+new_image_id+CEND)
+    print ('')
+    return
+
+
+# Ephemeral tinderbox-ng matrix: spawn worker, run /root/bin/tinder, terminate.
+# No new AMI is created; worker is always destroyed afterward.
+def tinder_image():
+    if (len(sys.argv) != 3):
+        print ('Please provide an ami id as argument')
+        return
+    ami_id = sys.argv[2]
+
+    ec2 = ec2_client()
+
+    print ('')
+    print (CYELLOW+CBOLD+'>>> Tinder run (manifest-100): '+CNORMAL+CGREEN+ami_id+CEND)
+    print ('')
+    print ('--- Instance type:          '+CGREEN+aws_default_vmtype_tinder+' (192 vCPU, 768 GiB)'+CEND)
+    print ('--- Matrix:                 '+CGREEN+'manifest-100.txt --pretend --jobs 32'+CEND)
+    print ('')
+
+    try:
+        run_resp = ec2.run_instances(
+            ImageId=ami_id,
+            InstanceType=aws_default_vmtype_tinder,
+            EbsOptimized=True,
+            KeyName=aws_key_name,
+            SecurityGroupIds=[aws_security],
+            MinCount=1,
+            MaxCount=1,
+        )
+        instance_id = run_resp['Instances'][0]['InstanceId']
+    except Exception:
+        print (CRED+'!!! Failed to deploy instance'+CEND)
+        return
+    print ('--- Instance deployed:      '+CGREEN+instance_id+CEND)
+
+    def _terminate_quietly():
+        try:
+            ec2.terminate_instances(InstanceIds=[instance_id])
+        except Exception:
+            pass
+
+    print ('--- Checking instance:      ', end="")
+    try:
+        ec2.get_waiter('instance_running').wait(InstanceIds=[instance_id])
+        print (CGREEN+'running'+CEND)
+    except Exception:
+        print (CRED+'failed'+CEND)
+        print (CRED+'!!! Instance failed to reach running state'+CEND)
+        _terminate_quietly()
+        return
+
+    print ('--- Instance dnsname:       ', end="")
+    try:
+        desc = ec2.describe_instances(InstanceIds=[instance_id])
+        instance_dns = desc['Reservations'][0]['Instances'][0]['PublicDnsName']
+        print (CGREEN+instance_dns+CEND)
+    except Exception:
+        print (CRED+'failed'+CEND)
+        print (CRED+'!!! Failed to get instance dnsname'+CEND)
+        _terminate_quietly()
+        return
+
+    print ('--- Running tinder:           (bootstrap + matrix; long-running)')
+    print ('')
+    tinder_rc = 1
+    try:
+        remote_cmd = tinder_env + ' ' + cmd_tinder
+        tinder_rc = subprocess.call(
+            "sleep 60 && ssh -q -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"
+            + instance_dns + " " + shlex.quote(remote_cmd),
+            shell=True)
+        print ('')
+    except Exception:
+        print (CRED+'!!! Failed to run tinder on instance'+CEND)
+        _terminate_quietly()
+        print ('')
+        return
+
+    print ('--- Cleanup instance:      ', end="")
+    try:
+        ec2.terminate_instances(InstanceIds=[instance_id])
+        print (CGREEN+'ok'+CEND)
+    except Exception:
+        print (CRED+'failed'+CEND)
+        print (CRED+'!!! Instance cleanup failed'+CEND)
+
+    print ('')
+    if tinder_rc:
+        print (CRED+'!!! Tinder finished with errors (rc='+str(tinder_rc)+')'+CEND)
+    else:
+        print (CYELLOW+CBOLD+'>>> Tinder run complete'+CNORMAL+CEND)
+    print ('')
+    return
+
+
 # The main function
 def main(argv):
 
@@ -589,6 +755,16 @@ def main(argv):
     # CASE 1d: 
     if 'rebuild_image' in argv:
        update_image(cmd_rebuild)
+       return
+
+    # CASE 1e: bake AMI from a running instance (/root/bin/tinder on disk)
+    if 'bake_tinder_ami' in argv:
+       bake_tinder_ami()
+       return
+
+    # CASE 1f: ephemeral tinderbox-ng matrix (manifest-100 smoke)
+    if 'tinder_image' in argv:
+       tinder_image()
        return
 
 
@@ -768,7 +944,8 @@ def main(argv):
               print ('%s%14s %02dd : %02dh : %02dm\t%s ip: %s ' % (prefix, color_state(state), int(uptime_d[0]),int(uptime_h[0]),int(uptime_m[0]), justify(vmtype,24), ipaddress ))
 
               if state == 'running':
-                print ('%s--Connect | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
+                 print ('%s--Connect | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
+                 print ('%s--Bake tinder AMI | refresh=true terminal=true shell="%s" param1="%s" param2="%s" param3="%s" param4="%s" color=%s' % (prefix, cmd_path, "bake_tinder_ami", current_instance_id, current_image_id, current_image_snapshot_id, color))
               if state == 'stopped':
                  print ('%s--Start | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 start-instances --instance-ids "+current_instance_id, color))
                  print ('%s--Create image | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 create-image --instance-id "+current_instance_id+" --name Linux-"+time.strftime("%Y%m%d-%Hh%M"), color))
@@ -803,6 +980,7 @@ def main(argv):
        print ('%sImage' % prefix) 
        print ('%s--Update | refresh=true terminal=true shell="%s" param1="%s" param2="%s" param3="%s" color=%s' % (prefix, cmd_path, "update_image", current_image_id, current_image_snapshot_id, color))
        print ('%s--Rebuild | refresh=true terminal=true shell="%s" param1="%s" param2="%s" param3="%s" color=%s' % (prefix, cmd_path, "rebuild_image", current_image_id, current_image_snapshot_id, color))
+       print ('%s--Tinder (100 pkg) | refresh=true terminal=true shell="%s" param1="%s" param2="%s" color=%s' % (prefix, cmd_path, "tinder_image", current_image_id, color))
 
        if (len(images) > 1):
           print ('%s--Destroy | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " && "+aws_command+" ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
