@@ -585,63 +585,7 @@ def update_image(cmd=cmd_update):
     return
 
 
-# Bake /root/bin/tinder (and the rest of the root disk) into a new AMI from a
-# running instance.  Does not run emerge update — use update_image() for that.
-def bake_tinder_ami():
-    if (len(sys.argv) < 3):
-        print ('Please provide instance-id as argument')
-        return
-    instance_id = sys.argv[2]
-    old_ami_id  = sys.argv[3] if len(sys.argv) > 3 else None
-    old_snap_id = sys.argv[4] if len(sys.argv) > 4 else None
-
-    ec2 = ec2_client()
-
-    print ('')
-    print (CYELLOW+CBOLD+'>>> Baking AMI from instance: '+CNORMAL+CGREEN+instance_id+CEND)
-    print ('')
-
-    print ('--- Creating new image:    ', end="")
-    new_image_id = None
-    try:
-        baked = ec2.create_image(
-            InstanceId=instance_id,
-            Name='Linux-' + time.strftime("%Y%m%d-%Hh%M") + '-tinder',
-            Description='Gentoo AMI with /root/bin/tinder baked in',
-        )
-        new_image_id = baked['ImageId']
-        print (CGREEN+new_image_id+CEND)
-    except Exception:
-        print (CRED+'failed'+CEND)
-        print (CRED+'!!! Failed to create image'+CEND)
-        return
-
-    print ('--- Checking new image:    ', end="")
-    try:
-        ec2.get_waiter('image_available').wait(ImageIds=[new_image_id])
-        print (CGREEN+'available'+CEND)
-    except Exception:
-        print (CRED+'failed'+CEND)
-        print (CRED+'!!! Image failed to reach available state'+CEND)
-        return
-
-    if old_ami_id and old_snap_id:
-        print ('--- Cleanup old image:     ', end="")
-        try:
-            ec2.deregister_image(ImageId=old_ami_id)
-            ec2.delete_snapshot(SnapshotId=old_snap_id)
-            print (CGREEN+'ok'+CEND)
-        except Exception:
-            print (CRED+'failed'+CEND)
-            print (CRED+'!!! Old image cleanup failed'+CEND)
-
-    print ('')
-    print (CYELLOW+CBOLD+'>>> AMI ready: '+CNORMAL+CGREEN+new_image_id+CEND)
-    print ('')
-    return
-
-
-# Ephemeral tinderbox-ng matrix: spawn worker, run /root/bin/tinder, terminate.
+# Ephemeral tinderbox-ng matrix: spawn worker, run tinder, terminate.
 # No new AMI is created; worker is always destroyed afterward.
 def tinder_image():
     if (len(sys.argv) != 3):
@@ -757,12 +701,7 @@ def main(argv):
        update_image(cmd_rebuild)
        return
 
-    # CASE 1e: bake AMI from a running instance (/root/bin/tinder on disk)
-    if 'bake_tinder_ami' in argv:
-       bake_tinder_ami()
-       return
-
-    # CASE 1f: ephemeral tinderbox-ng matrix (manifest-100 smoke)
+    # CASE 1e: ephemeral tinderbox-ng matrix (manifest-100 smoke)
     if 'tinder_image' in argv:
        tinder_image()
        return
@@ -945,9 +884,9 @@ def main(argv):
 
               if state == 'running':
                  print ('%s--Connect | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
-                 print ('%s--Bake tinder AMI | refresh=true terminal=true shell="%s" param1="%s" param2="%s" param3="%s" param4="%s" color=%s' % (prefix, cmd_path, "bake_tinder_ami", current_instance_id, current_image_id, current_image_snapshot_id, color))
               if state == 'stopped':
                  print ('%s--Start | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 start-instances --instance-ids "+current_instance_id, color))
+              if (state == 'running') or (state == 'stopped'):
                  print ('%s--Create image | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 create-image --instance-id "+current_instance_id+" --name Linux-"+time.strftime("%Y%m%d-%Hh%M"), color))
               if state == 'running':
                  print ('%s--Stop | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 stop-instances --instance-ids "+current_instance_id+" --force", color))
