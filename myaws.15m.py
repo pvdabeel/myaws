@@ -919,7 +919,7 @@ def main(argv):
        print ('%sImage' % prefix) 
        print ('%s--Update | refresh=true terminal=true shell="%s" param1="%s" param2="%s" param3="%s" color=%s' % (prefix, cmd_path, "update_image", current_image_id, current_image_snapshot_id, color))
        print ('%s--Rebuild | refresh=true terminal=true shell="%s" param1="%s" param2="%s" param3="%s" color=%s' % (prefix, cmd_path, "rebuild_image", current_image_id, current_image_snapshot_id, color))
-       print ('%s--Tinder (100 pkg) | refresh=true terminal=true shell="%s" param1="%s" param2="%s" color=%s' % (prefix, cmd_path, "tinder_image", current_image_id, color))
+       print ('%s--Tinder | refresh=true terminal=true shell="%s" param1="%s" param2="%s" color=%s' % (prefix, cmd_path, "tinder_image", current_image_id, color))
 
        if (len(images) > 1):
           print ('%s--Destroy | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 deregister-image --image-id "+current_image_id + " && "+aws_command+" ec2 delete-snapshot --snapshot-id "+current_image_snapshot_id, color))
