@@ -164,7 +164,7 @@ aws_vmtypes  = [#('t2', [ ('.micro',   '(   1 vcpu, 1Gb ram )\t'),
 
 aws_default_vmtype_update  = 'c8i.12xlarge'
 aws_default_vmtype_rebuild = 'c8i.48xlarge'
-aws_default_vmtype_tinder  = 'm8i.48xlarge'
+aws_default_vmtype_tinder  = 'm8i.96xlarge'
 
 # Command to be called inside instance to update it
 
@@ -172,13 +172,22 @@ cmd_update  = 'update'
 cmd_rebuild = 'fullupdate'
 cmd_tinder  = 'tinder'
 
-# Passed to the ephemeral tinder worker (100-package smoke test).
+# Ephemeral tinder worker: full manifest-all --build matrix.
 tinder_env = (
-    'TINDER_MANIFEST=manifest-100.txt'
-    ' TINDER_MATRIX_MODE=--pretend'
-    ' TINDER_JOBS=32'
+    'TINDER_MANIFEST=manifest-all.txt'
+    ' TINDER_MATRIX_MODE=--build'
+    ' TINDER_JOBS=64'
     ' NPROC=32'
 )
+
+# Smoke test example (manifest-100 --pretend on m8i.48xlarge):
+# aws_default_vmtype_tinder = 'm8i.48xlarge'
+# tinder_env = (
+#     'TINDER_MANIFEST=manifest-100.txt'
+#     ' TINDER_MATRIX_MODE=--pretend'
+#     ' TINDER_JOBS=32'
+#     ' NPROC=32'
+# )
 
 # aws ec2 describe-images --owners 615416975922 --query 'Images[*].{ID:ImageId}'
 # aws ec2 run-instances --image-id ami-089fc69c2ca496809 --count 1 --ebs-optimized --instance-type t2.micro --key-name gentoo --security-group-ids sg-bce547d1
@@ -596,10 +605,10 @@ def tinder_image():
     ec2 = ec2_client()
 
     print ('')
-    print (CYELLOW+CBOLD+'>>> Tinder run (manifest-100): '+CNORMAL+CGREEN+ami_id+CEND)
+    print (CYELLOW+CBOLD+'>>> Tinder run (manifest-all --build): '+CNORMAL+CGREEN+ami_id+CEND)
     print ('')
-    print ('--- Instance type:          '+CGREEN+aws_default_vmtype_tinder+' (192 vCPU, 768 GiB)'+CEND)
-    print ('--- Matrix:                 '+CGREEN+'manifest-100.txt --pretend --jobs 32'+CEND)
+    print ('--- Instance type:          '+CGREEN+aws_default_vmtype_tinder+' (384 vCPU, 1536 GiB)'+CEND)
+    print ('--- Matrix:                 '+CGREEN+'manifest-all.txt --build --jobs 64'+CEND)
     print ('')
 
     try:
@@ -649,7 +658,7 @@ def tinder_image():
     print ('')
     tinder_rc = 1
     try:
-        remote_cmd = tinder_env + ' ' + cmd_tinder
+        remote_cmd = 'bash -icl ' + shlex.quote(tinder_env.strip() + ' ' + cmd_tinder)
         tinder_rc = subprocess.call(
             "sleep 60 && ssh -q -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"
             + instance_dns + " " + shlex.quote(remote_cmd),
@@ -701,7 +710,7 @@ def main(argv):
        update_image(cmd_rebuild)
        return
 
-    # CASE 1e: ephemeral tinderbox-ng matrix (manifest-100 smoke)
+    # CASE 1e: ephemeral tinderbox-ng matrix (manifest-all --build)
     if 'tinder_image' in argv:
        tinder_image()
        return
