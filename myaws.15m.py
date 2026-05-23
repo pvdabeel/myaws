@@ -886,7 +886,7 @@ def main(argv):
                  print ('%s--Connect | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, "ssh", "-q -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/amazon-vms root@"+dnsname, color))
               if state == 'stopped':
                  print ('%s--Start | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 start-instances --instance-ids "+current_instance_id, color))
-              if (state == 'running') or (state == 'stopped'):
+              if (state == 'stopped'):
                  print ('%s--Create image | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 create-image --instance-id "+current_instance_id+" --name Linux-"+time.strftime("%Y%m%d-%Hh%M"), color))
               if state == 'running':
                  print ('%s--Stop | refresh=true terminal=true shell="%s" param1="%s" color=%s' % (prefix, aws_command, "ec2 stop-instances --instance-ids "+current_instance_id+" --force", color))
